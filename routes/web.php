@@ -4,25 +4,27 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
+
 Route::get('/', function () {
     return view('welcome');
 });
 
-// ==============================
-// Daftar akun (tanpa database)
-// ==============================
+
 $hardcodedUsers = [
     'admin@example.com' => 'password123',
     'user@example.com'  => 'user123',
 ];
 
 // Tampilkan halaman login
-Route::get('/login', function () {
-    if (session('logged_in')) {
-        return redirect('/dashboard');
+Route::get('/dashboard', function () {
+
+    if (!session('logged_in')) {
+        return redirect('/login');
     }
-    return view('login');
-})->name('login');
+
+    return view('dashboard');
+
+})->name('dashboard');
 
 // Proses login
 Route::post('/login', function (Request $request) use ($hardcodedUsers) {
@@ -49,16 +51,16 @@ Route::post('/login', function (Request $request) use ($hardcodedUsers) {
 
 // Halaman setelah login berhasil
 Route::get('/dashboard', function () {
+
     if (!session('logged_in')) {
         return redirect('/login');
     }
-    return '<h1>Selamat datang, ' . session('user_email') . '!</h1>
-            <p><a href="/surat/tambah">+ Tambah Nomor Surat</a></p>
-            <form method="POST" action="/logout">
-                ' . csrf_field() . '
-                <button type="submit">Logout</button>
-            </form>';
-});
+
+    $suratList = bacaSurat();
+
+    return view('dashboard', compact('suratList'));
+
+})->name('dashboard');
 
 // Logout
 Route::post('/logout', function (Request $request) {
@@ -96,8 +98,8 @@ Route::get('/surat/tambah', function () {
     $suratList     = bacaSurat();
     $nextSequence  = count($suratList) + 1;
 
-    return view('surat.create', compact('suratList', 'nextSequence'));
-})->name('surat.create');
+    return view('tambahsurat', compact('suratList', 'nextSequence'));
+})->name('tambahsurat');
 
 // Proses simpan nomor surat baru
 Route::post('/surat/tambah', function (Request $request) {
@@ -142,5 +144,10 @@ Route::post('/surat/tambah', function (Request $request) {
 
     simpanSurat($suratList);
 
-    return redirect()->route('surat.create')->with('success', "Nomor surat berhasil dibuat: {$nomorSurat}");
+    return redirect()->route('tambahsurat')->with('success', "Nomor surat berhasil dibuat: {$nomorSurat}");
 })->name('surat.store');
+
+// Route::get('/dashboard', function () {
+//     return view('dashboard');
+// })->name('dashboard');
+

@@ -1,0 +1,227 @@
+/* ===========================
+   WARNA WEBSITE
+=========================== */
+
+:root{
+    --primary:#033689;
+    --primary-light:#edf4ff;
+    --hover:#f6f8fc;
+}
+
+/* ===========================
+   BODY
+=========================== */
+
+body{
+    margin:0;
+    background:#f4f7fc;
+    font-family:'Segoe UI',sans-serif;
+}
+
+/* ===========================
+   SIDEBAR
+=========================== */
+
+.sidebar{
+    width:260px;
+    height:100vh;
+    background:#fff;
+    border-right:1px solid #e9ecef;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:fixed;
+}
+
+/* ===========================
+   LOGO
+=========================== */
+
+.logo{
+    padding:30px;
+}
+
+.logo h4{
+    color:var(--primary);
+    font-weight:700;
+    margin-bottom:3px;
+}
+
+.logo small{
+    color:#777;
+}
+
+/* ===========================
+   MENU
+=========================== */
+
+.nav{
+    padding:0 15px;
+}
+
+.nav-link{
+    color:#555;
+    padding:13px 18px;
+    border-radius:12px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-weight:500;
+    transition:.3s;
+}
+
+.nav-link i{
+    font-size:18px;
+}
+
+.nav-link:hover{
+    background:var(--primary-light);
+    color:var(--primary);
+}
+
+.nav-link.active{
+    background:var(--primary);
+    color:#fff;
+}
+
+/* ===========================
+   USER PROFILE
+=========================== */
+
+.user-profile{
+    padding:20px;
+    border-top:1px solid #eee;
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.avatar{
+    width:45px;
+    height:45px;
+    border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+}
+
+.user-profile small{
+    color:#777;
+}
+
+/* ===========================
+   CONTENT
+=========================== */
+
+.content{
+    margin-left:260px;
+    padding:30px;
+    overflow:hidden;
+}
+
+/* ===========================
+   CARD
+=========================== */
+
+.card{
+    border:none;
+    border-radius:18px;
+    box-shadow:0 4px 12px rgba(0,0,0,.05);
+}
+
+.card-header{
+    background:#fff;
+    border-bottom:1px solid #eee;
+    border-radius:18px 18px 0 0 !important;
+}
+
+/* ===========================
+   FORM
+=========================== */
+
+.form-control,
+.form-select{
+    height:48px;
+    border-radius:10px;
+}
+
+textarea.form-control{
+    height:auto;
+}
+
+/* ===========================
+   BUTTON
+=========================== */
+
+.btn-primary{
+    background:var(--primary);
+    border-color:var(--primary);
+}
+
+.btn-primary:hover{
+    background:#022b6d;
+    border-color:#022b6d;
+}
+
+.btn-outline-primary{
+    color:var(--primary);
+    border-color:var(--primary);
+}
+
+.btn-outline-primary:hover{
+    background:var(--primary);
+    color:#fff;
+}
+
+/* ===========================
+   COLOR UTILITIES
+=========================== */
+
+.bg-primary{
+    background:var(--primary)!important;
+}
+
+.text-primary{
+    color:var(--primary)!important;
+}
+
+/* ===========================
+   ICON BOX
+=========================== */
+
+.icon-box{
+    width:68px;
+    height:68px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+/* ===========================
+   TABLE
+=========================== */
+
+.table th{
+    font-weight:600;
+}
+
+.table td{
+    vertical-align:middle;
+}
+
+.table tbody tr td{
+    padding:16px;
+}
+
+/* ===========================
+   CHART
+=========================== */
+
+#suratChart{
+    height:300px !important;
+}
