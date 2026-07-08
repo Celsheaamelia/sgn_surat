@@ -27,6 +27,16 @@ Route::get('/dashboard', function () {
 })->name('dashboard');
 
 // Proses login
+
+// Halaman Login
+Route::get('/login', function () {
+    if (session('logged_in')) {
+        return redirect()->route('dashboard');
+    }
+
+    return view('login');
+})->name('login');
+
 Route::post('/login', function (Request $request) use ($hardcodedUsers) {
     $credentials = $request->validate([
         'email'    => ['required', 'email'],

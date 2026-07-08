@@ -24,13 +24,12 @@ body{
 
 .sidebar{
     width:260px;
-    height:100vh;
-    background:#fff;
-    border-right:1px solid #e9ecef;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
+    height:calc(100vh - 60px);
     position:fixed;
+    top:60px;
+    left:0;
+    background:#fff;
+    border-right:1px solid #eee;
 }
 
 /* ===========================
@@ -117,10 +116,15 @@ body{
    CONTENT
 =========================== */
 
+.wrapper{
+    display:flex;
+    margin-top:60px;
+}
+
 .content{
     margin-left:260px;
-    padding:30px;
-    overflow:hidden;
+    width:calc(100% - 260px);
+    padding:20px;
 }
 
 /* ===========================
