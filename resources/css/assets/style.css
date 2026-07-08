@@ -22,16 +22,7 @@ body{
    SIDEBAR
 =========================== */
 
-.sidebar{
-    width:260px;
-    height:100vh;
-    background:#fff;
-    border-right:1px solid #e9ecef;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    position:fixed;
-}
+/* sidebar layout is handled in resources/views/sidebar.blade.php to avoid duplicate app layout rules */
 
 /* ===========================
    LOGO
@@ -118,7 +109,9 @@ body{
 =========================== */
 
 .content{
-    margin-left:260px;
+    flex:1 1 auto;
+    min-width:0;
+    width:auto;
     padding:30px;
     overflow:hidden;
 }

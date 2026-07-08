@@ -13,7 +13,7 @@
 
         {{-- Logo / Brand --}}
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-blue-600">Admin Panel</h1>
+            <h1 class="text-3xl font-bold text-[#24382e]">Admin Panel</h1>
             <p class="text-gray-500 text-sm mt-1">Letter System</p>
         </div>
 
@@ -36,7 +36,7 @@
             @endif
 
             @if (session('status'))
-                <div class="mx-8 mt-4 bg-blue-50 border border-blue-200 text-blue-600 text-sm rounded-lg px-4 py-3">
+                <div class="mx-8 mt-4 bg-[#eef2ea] border border-[#cdd9c8] text-[#24382e] text-sm rounded-lg px-4 py-3">
                     {{ session('status') }}
                 </div>
             @endif
@@ -61,7 +61,7 @@
                             autofocus
                             placeholder="nama@perusahaan.com"
                             class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm
-                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                   focus:outline-none focus:ring-2 focus:ring-[#24382e] focus:border-[#24382e]
                                    @error('email') border-red-400 @enderror"
                         >
                     </div>
@@ -84,7 +84,7 @@
                             required
                             placeholder="••••••••"
                             class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm
-                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                   focus:outline-none focus:ring-2 focus:ring-[#24382e] focus:border-[#24382e]
                                    @error('password') border-red-400 @enderror"
                         >
                         <button type="button" onclick="togglePassword()"
@@ -100,12 +100,12 @@
                 {{-- Remember + Forgot --}}
                 <div class="flex items-center justify-between text-sm">
                     <label class="flex items-center gap-2 text-gray-600 cursor-pointer">
-                        <input type="checkbox" name="remember" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <input type="checkbox" name="remember" class="rounded border-gray-300 text-[#24382e] focus:ring-[#24382e]">
                         Ingat saya
                     </label>
 
                     @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="text-blue-600 hover:underline">
+                        <a href="{{ route('password.request') }}" class="text-[#24382e] hover:underline">
                             Lupa password?
                         </a>
                     @endif
@@ -113,7 +113,7 @@
 
                 {{-- Submit --}}
                 <button type="submit"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg
+                        class="w-full bg-[#24382e] hover:bg-[#1a2921] text-white font-medium py-2.5 rounded-lg
                                transition flex items-center justify-center gap-2 text-sm">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     Masuk

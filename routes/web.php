@@ -16,6 +16,10 @@ $hardcodedUsers = [
 ];
 
 // Tampilkan halaman login
+Route::get('/login', function () {
+    return view('login');
+})->name('login');
+
 Route::get('/dashboard', function () {
 
     if (!session('logged_in')) {
