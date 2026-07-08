@@ -17,7 +17,7 @@
   /* Color tokens */
   --ink:        #1c2b23;   /* near-black, green-cast */
   --ink-soft:   #3d4f45;
-  --ledger:     #eef2ea;   /* pale green-tinted ledger paper */
+ /* pale green-tinted ledger paper */
   --ledger-line:#cdd9c8;   /* faint rule lines on ledger paper */
   --paper:      #fbfcf9;   /* card surface, slightly warmer than white */
   --brass:      #a9812f;   /* registrar's stamp / primary accent */
@@ -40,15 +40,7 @@
    ========================================================================== */
 
 .ledger-page {
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 31px,
-      var(--ledger-line) 32px
-    ),
-    var(--ledger);
-  background-attachment: local;
+  background: var(--ledger);
   font-family: var(--font-body);
   color: var(--ink);
   min-height: 100vh;

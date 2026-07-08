@@ -165,3 +165,6 @@ Route::post('/surat/tambah', function (Request $request) {
 //     return view('dashboard');
 // })->name('dashboard');
 
+Route::get('/riwayat-surat', function () {
+    return view('riwayatsurat');
+})->name('riwayatsurat');

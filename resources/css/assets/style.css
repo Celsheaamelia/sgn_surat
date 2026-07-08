@@ -19,113 +19,12 @@ body{
 }
 
 /* ===========================
-   SIDEBAR
-=========================== */
-
-.sidebar{
-    width:260px;
-    height:100vh;
-    background:#fff;
-    border-right:1px solid #e9ecef;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    position:fixed;
-}
-
-/* ===========================
-   LOGO
-=========================== */
-
-.logo{
-    padding:30px;
-}
-
-.logo h4{
-    color:var(--primary);
-    font-weight:700;
-    margin-bottom:3px;
-}
-
-.logo small{
-    color:#777;
-}
-
-/* ===========================
-   MENU
-=========================== */
-
-.nav{
-    padding:0 15px;
-}
-
-.nav-link{
-    color:#555;
-    padding:13px 18px;
-    border-radius:12px;
-    margin-bottom:10px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    font-weight:500;
-    transition:.3s;
-}
-
-.nav-link i{
-    font-size:18px;
-}
-
-.nav-link:hover{
-    background:var(--primary-light);
-    color:var(--primary);
-}
-
-.nav-link.active{
-    background:var(--primary);
-    color:#fff;
-}
-
-/* ===========================
-   USER PROFILE
-=========================== */
-
-.user-profile{
-    padding:20px;
-    border-top:1px solid #eee;
-    display:flex;
-    align-items:center;
-    gap:12px;
-}
-
-.avatar{
-    width:45px;
-    height:45px;
-    border-radius:50%;
-    background:var(--primary);
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:bold;
-}
-
-.user-profile small{
-    color:#777;
-}
-
-/* ===========================
    CONTENT
 =========================== */
 
 .wrapper{
     display:flex;
     margin-top:60px;
-}
-
-.content{
-    margin-left:260px;
-    padding:30px;
-    overflow:hidden;
 }
 
 /* ===========================

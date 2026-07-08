@@ -26,7 +26,7 @@
             </li>
 
             <li>
-                <a href="#" class="nav-link">
+                <a href="{{ route('riwayatsurat') }}" class="nav-link {{ request()->routeIs('riwayatsurat') ? 'active' : '' }}">
                     <i class="bi bi-folder2-open"></i>
                     <span>Riwayat Surat</span>
                 </a>
@@ -58,10 +58,17 @@
 </aside>
 
 <style>
+    /* Sidebar diam di tempat, nggak ikut scroll halaman.
+       top disamakan dengan tinggi navbar (lihat .navbar-custom di layout). */
     .sidebar {
-        flex: 0 0 280px;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        bottom: 0;
         width: 280px;
-        min-height: 100vh;
+        overflow-y: auto;
+        z-index: 900;
+
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -69,9 +76,6 @@
         background: linear-gradient(145deg, #064e3b 0%, #083d2e 100%);
         color: #f8fafc;
         box-shadow: 18px 0 40px rgba(6, 78, 59, 0.18);
-        position: sticky;
-        top: 0;
-        flex-shrink: 0;
     }
 
     .sidebar-top {
@@ -182,9 +186,9 @@
 
     @media (max-width: 767px) {
         .sidebar {
+            position: static;
             width: 100%;
-            min-height: auto;
-            position: relative;
+            height: auto;
             box-shadow: none;
         }
     }
