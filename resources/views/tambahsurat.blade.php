@@ -550,8 +550,9 @@
 
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
+                            {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.0001) --}}
                             <p class="mb-0" id="previewNumber">
-                                {{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}/---/---/---/{{ date('Y') }}
+                                ---/---/---/--------.{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}
                             </p>
                         </div>
 
@@ -568,8 +569,8 @@
                             <span class="ledger-stamp-value" id="previewTujuan">-</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="ledger-stamp-key">Tahun</span>
-                            <span class="ledger-stamp-value">{{ date('Y') }}</span>
+                            <span class="ledger-stamp-key">Tanggal</span>
+                            <span class="ledger-stamp-value" id="previewTanggal">-</span>
                         </div>
                     </div>
                 </div>
@@ -623,24 +624,37 @@
     const klasifikasiEl = document.getElementById('klasifikasi');
     const signEl = document.getElementById('signatory');
     const tujuanEl = document.getElementById('kode_tujuan');
+    const tanggalEl = document.getElementById('tanggal');
     const seqText = "{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}";
-    const year = "{{ date('Y') }}";
 
+    // "2026-07-10" -> "20260710"
+    function formatTanggal(isoDate) {
+        return isoDate ? isoDate.replaceAll('-', '') : '--------';
+    }
+
+    // Format final: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ
+    // Contoh: SG26-BD05-SKP/20260710.0001
     function updatePreview() {
         const klasifikasi = klasifikasiEl.value || '---';
         const sign = signEl.value || '---';
         const tujuan = tujuanEl.value || '---';
+        const tanggal = formatTanggal(tanggalEl.value);
 
         document.getElementById('previewNumber').textContent =
-            `${seqText}/${klasifikasi}/${sign}/${tujuan}/${year}`;
+            `${sign}-${tujuan}-${klasifikasi}/${tanggal}.${seqText}`;
         document.getElementById('previewKlasifikasi').textContent = klasifikasi === '---' ? '-' : klasifikasi;
         document.getElementById('previewSign').textContent = sign === '---' ? '-' : sign;
         document.getElementById('previewTujuan').textContent = tujuan === '---' ? '-' : tujuan;
+        document.getElementById('previewTanggal').textContent = tanggalEl.value || '-';
     }
 
     klasifikasiEl.addEventListener('change', updatePreview);
     signEl.addEventListener('change', updatePreview);
     tujuanEl.addEventListener('change', updatePreview);
+    tanggalEl.addEventListener('change', updatePreview);
+
+    // Sinkronkan preview begitu halaman dimuat (tanggal sudah punya default hari ini)
+    updatePreview();
 </script>
 
 @endsection
