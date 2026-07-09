@@ -65,12 +65,43 @@ Route::middleware('auth')->group(function () {
     // Proses simpan nomor surat baru
     Route::post('/surat/tambah', function (Request $request) {
 
-        // isi kode simpan surat
+        $validated = $request->validate([
+            'perihal'     => 'required|string|max:255',
+            'klasifikasi' => 'required|string',
+            'signatory'   => 'required|string',
+            'kode_tujuan' => 'required|string',
+            'tanggal'     => 'required|date',
+        ]);
+
+        $suratList = bacaSurat();
+        $nextSequence = count($suratList) + 1;
+        $seqText = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+        $year = date('Y', strtotime($validated['tanggal']));
+
+        $nomorSurat = "{$seqText}/{$validated['klasifikasi']}/{$validated['signatory']}/{$validated['kode_tujuan']}/{$year}";
+
+        $suratList[] = [
+            'nomor'       => $nomorSurat,
+            'perihal'     => $validated['perihal'],
+            'klasifikasi' => $validated['klasifikasi'],
+            'signatory'   => $validated['signatory'],
+            'kode_tujuan' => $validated['kode_tujuan'],
+            'tanggal'     => $validated['tanggal'],
+        ];
+
+        simpanSurat($suratList);
+
+        return redirect()->route('tambahsurat')->with('success', "Surat berhasil dibuat dengan nomor {$nomorSurat}");
 
     })->name('surat.store');
 
     Route::get('/riwayat-surat', function () {
-        return view('riwayatsurat');
+
+        $suratList = bacaSurat();
+        $klasifikasiList = DB::table('klasifikasi_surat')->orderBy('kode')->get();
+
+        return view('riwayatsurat', compact('suratList', 'klasifikasiList'));
+
     })->name('riwayatsurat');
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

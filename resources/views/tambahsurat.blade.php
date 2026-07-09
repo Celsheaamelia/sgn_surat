@@ -604,7 +604,7 @@
                         </thead>
                         <tbody>
                             @foreach (array_reverse($suratList) as $surat)
-                                <tr>
+                            <tr>
                                     <td class="ledger-nomor">{{ $surat['nomor'] }}</td>
                                     <td class="ledger-perihal">{{ $surat['perihal'] }}</td>
                                     <td class="ledger-tanggal">{{ $surat['tanggal'] }}</td>
