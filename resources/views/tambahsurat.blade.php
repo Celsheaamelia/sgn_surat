@@ -2,28 +2,30 @@
 
 @section('content')
 
+{{--
+    Choices.js — bikin <select> jadi searchable, dipakai buat Klasifikasi & Kode Tujuan.
+    Di-push ke stack di layout (bukan ditaruh langsung di tengah body) supaya
+    tidak merusak posisi sidebar/navbar.
+--}}
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+@endpush
+
 <style>
     /* ==========================================================================
        Tambah Surat — Registry Ledger Theme (Bootstrap version)
        Scoped to Bootstrap + custom .ledger-* classes used di bawah.
-
-       Concept: halaman ini menerbitkan nomor surat resmi berurutan —
-       jadi tampilannya meminjam gaya buku ledger pemerintahan.
-       Pale green-tinted ledger paper, hairline rule guides, brass
-       registrar's stamp untuk nomor yang di-generate, dan monospace
-       serial-number untuk apa pun yang berperan sebagai "nomor".
        ========================================================================== */
 
     @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
     :root {
-        /* Color tokens */
-        --ink:        #1c2b23;   /* near-black, green-cast */
+        --ink:        #1c2b23;
         --ink-soft:   #3d4f45;
-        --ledger:     #eef3ea;   /* pale green-tinted ledger paper */
-        --ledger-line:#cdd9c8;   /* faint rule lines on ledger paper */
-        --paper:      #fbfcf9;   /* card surface, slightly warmer than white */
-        --brass:      #a9812f;   /* registrar's stamp / primary accent */
+        --ledger:     #eef3ea;
+        --ledger-line:#cdd9c8;
+        --paper:      #fbfcf9;
+        --brass:      #a9812f;
         --brass-dark: #8a6a24;
         --brass-tint: #f4ecd8;
         --line:       #dfe6da;
@@ -32,24 +34,23 @@
         --success:    #3f6b4a;
         --success-bg: #eef5ef;
 
-        /* Type */
         --font-display: 'Fraunces', Georgia, serif;
         --font-body: 'Inter', -apple-system, sans-serif;
         --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
 
-    /* ==========================================================================
-       Page base — ledger paper canvas
-       ========================================================================== */
-
+    /* Isolasi stacking context halaman ini, supaya dropdown Choices.js
+       (position: absolute) nggak pernah lompat keluar dan nimpa sidebar
+       dari layout induk. */
     .ledger-page {
         background: var(--ledger);
         font-family: var(--font-body);
         color: var(--ink);
         min-height: 100vh;
+        position: relative;
+        isolation: isolate;
     }
 
-    /* Breadcrumb */
     .ledger-breadcrumb {
         background: transparent;
         padding: 0;
@@ -68,7 +69,6 @@
         font-weight: 600;
     }
 
-    /* Alerts */
     .ledger-alert-success {
         background: var(--success-bg);
         border: 1px solid #cfe2d4;
@@ -83,10 +83,6 @@
         border-radius: 0.75rem;
         font-size: 0.9rem;
     }
-
-    /* ==========================================================================
-       Cards
-       ========================================================================== */
 
     .ledger-card,
     .ledger-stamp,
@@ -123,10 +119,6 @@
     .ledger-card .card-body {
         padding: 1.75rem;
     }
-
-    /* ==========================================================================
-       Form fields
-       ========================================================================== */
 
     .ledger-form label {
         color: var(--ink);
@@ -178,16 +170,76 @@
         color: #a3ada2;
     }
 
-    /* Nomor urut helper text */
+    /* ==========================================================================
+       Choices.js override — biar nyatu sama tema ledger DAN dikunci lebarnya
+       supaya nggak overflow keluar kolom / nimpa sidebar.
+       ========================================================================== */
+
+    .ledger-form .choices {
+        margin-bottom: 0;
+        font-size: 0.92rem;
+        font-family: var(--font-body);
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .ledger-form .choices__inner {
+        background-color: var(--paper) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 0.55rem !important;
+        padding: 0.5rem 0.75rem !important;
+        min-height: 48px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .ledger-form .choices.is-focused .choices__inner,
+    .ledger-form .choices.is-open .choices__inner {
+        border-color: var(--brass) !important;
+        box-shadow: 0 0 0 3px rgba(169,129,47,0.16);
+    }
+
+    .ledger-form .choices__list--single .choices__item {
+        color: var(--ink);
+    }
+
+    .ledger-form .choices__list--dropdown,
+    .ledger-form .choices__list[aria-expanded] {
+        border: 1px solid var(--line) !important;
+        border-radius: 0.55rem !important;
+        box-shadow: 0 8px 24px rgba(28,43,35,0.12);
+        overflow: hidden;
+        width: 100%;
+        z-index: 20;
+    }
+
+    .ledger-form .choices__list--dropdown .choices__input {
+        border-bottom: 1px solid var(--line) !important;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-body);
+    }
+
+    .ledger-form .choices__list--dropdown .choices__item--selectable.is-highlighted {
+        background-color: var(--brass-tint) !important;
+        color: var(--brass-dark);
+    }
+
+    .ledger-form .choices__list--dropdown .choices__item {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.85rem;
+    }
+
+    .ledger-form .choices__placeholder {
+        opacity: 1;
+        color: #a3ada2;
+    }
+
     .ledger-help {
         color: #8a9587;
         font-size: 0.75rem;
         margin-top: 0.35rem;
     }
-
-    /* ==========================================================================
-       Buttons
-       ========================================================================== */
 
     .ledger-btn-ghost {
         background: transparent;
@@ -217,10 +269,6 @@
         color: #fff;
     }
 
-    /* ==========================================================================
-       Live Preview — the registrar's stamp
-       ========================================================================== */
-
     .ledger-stamp {
         background: linear-gradient(160deg, #24382e 0%, var(--ink) 70%);
         border: 1px solid rgba(255,255,255,0.06);
@@ -229,7 +277,6 @@
         color: var(--brass-tint);
     }
 
-    /* faint watermark, like a registry office's ghost stamp in the corner */
     .ledger-stamp::before {
         content: "TERDAFTAR";
         position: absolute;
@@ -254,7 +301,6 @@
         color: var(--brass);
     }
 
-    /* The stamped number itself: dashed ring, like a perforated seal */
     .ledger-stamp-box {
         background: rgba(169,129,47,0.08);
         border: 1.5px dashed rgba(244,236,216,0.35);
@@ -281,7 +327,6 @@
         word-break: break-all;
     }
 
-    /* Stat rows below the stamp */
     .ledger-stamp-key {
         color: rgba(244,236,216,0.55);
         font-size: 0.83rem;
@@ -294,7 +339,6 @@
         letter-spacing: 0.02em;
     }
 
-    /* Status Sistem card */
     .ledger-status {
         background: var(--paper);
     }
@@ -318,10 +362,6 @@
         font-family: var(--font-mono);
         font-size: 0.82rem;
     }
-
-    /* ==========================================================================
-       Daftar Nomor Surat — the ledger table
-       ========================================================================== */
 
     .ledger-table-title {
         font-family: var(--font-display);
@@ -369,10 +409,6 @@
         font-size: 0.82rem;
     }
 
-    /* ==========================================================================
-       Responsive
-       ========================================================================== */
-
     @media (max-width: 1024px) {
         #previewNumber {
             font-size: 0.95rem;
@@ -393,7 +429,6 @@
         }
     }
 
-    /* Respect reduced-motion preferences */
     @media (prefers-reduced-motion: reduce) {
         * {
             transition: none !important;
@@ -450,22 +485,7 @@
                             </div>
 
                             <div class="row g-3 mb-3">
-                                {{-- Klasifikasi Surat (dari tabel klasifikasi_surat) --}}
-                                <div class="col-md-6">
-                                    <label for="klasifikasi" class="form-label">
-                                        Klasifikasi Surat <span class="ledger-required">*</span>
-                                    </label>
-                                    <select name="klasifikasi" id="klasifikasi" required class="form-select">
-                                        <option value="">Pilih Klasifikasi Surat</option>
-                                        @foreach ($klasifikasiList as $klasifikasi)
-                                            <option value="{{ $klasifikasi->kode }}" @selected(old('klasifikasi') == $klasifikasi->kode)>
-                                                {{ $klasifikasi->kode }} — {{ $klasifikasi->jenis_surat }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                {{-- Penandatangan (dari tabel penandatangan) --}}
+                                {{-- Penandatangan --}}
                                 <div class="col-md-6">
                                     <label for="signatory" class="form-label">
                                         Penandatangan <span class="ledger-required">*</span>
@@ -473,8 +493,23 @@
                                     <select name="signatory" id="signatory" required class="form-select">
                                         <option value="">Pilih Penandatangan</option>
                                         @foreach ($penandatanganList as $penandatangan)
-                                            <option value="{{ $penandatangan->kode }}" @selected(old('signatory') == $penandatangan->kode)>
+                                            <option value="{{ $penandatangan->id }}">
                                                 {{ $penandatangan->jabatan }} ({{ $penandatangan->kode }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Kode Tujuan (searchable) --}}
+                                <div class="col-md-6">
+                                    <label for="kode_tujuan" class="form-label">
+                                        Kode Tujuan <span class="ledger-required">*</span>
+                                    </label>
+                                    <select name="kode_tujuan" id="kode_tujuan" required class="form-select">
+                                        <option value="">Pilih Kode Tujuan</option>
+                                        @foreach ($tujuanList as $tujuan)
+                                            <option value="{{ $tujuan->id }}">
+                                                {{ $tujuan->kode }} — {{ $tujuan->nama_tujuan }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -482,6 +517,21 @@
                             </div>
 
                             <div class="row g-3 mb-3">
+                                {{-- Klasifikasi Surat (searchable) --}}
+                                <div class="col-md-6">
+                                    <label for="klasifikasi" class="form-label">
+                                        Klasifikasi Surat <span class="ledger-required">*</span>
+                                    </label>
+                                    <select name="klasifikasi" id="klasifikasi" required class="form-select">
+                                        <option value="">Pilih Klasifikasi Surat</option>
+                                        @foreach ($klasifikasiList as $klasifikasi)
+                                            <option value="{{ $klasifikasi->id }}">
+                                                {{ $klasifikasi->kode }} — {{ $klasifikasi->jenis_surat }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
                                 {{-- Tanggal Surat --}}
                                 <div class="col-md-6">
                                     <label for="tanggal" class="form-label">
@@ -495,29 +545,14 @@
                                         value="{{ old('tanggal', date('Y-m-d')) }}"
                                         class="form-control">
                                 </div>
-
-                                {{-- Kode Tujuan (dari tabel tujuan_surats) --}}
-                                <div class="col-md-6">
-                                    <label for="kode_tujuan" class="form-label">
-                                        Kode Tujuan <span class="ledger-required">*</span>
-                                    </label>
-                                    <select name="kode_tujuan" id="kode_tujuan" required class="form-select">
-                                        <option value="">Pilih Kode Tujuan</option>
-                                        @foreach ($tujuanList as $tujuan)
-                                            <option value="{{ $tujuan->kode }}" @selected(old('kode_tujuan') == $tujuan->kode)>
-                                                {{ $tujuan->kode }} — {{ $tujuan->nama_tujuan }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
                             </div>
 
-                            {{-- Nomor urut (readonly, otomatis dari server) --}}
+                            {{-- Nomor urut (readonly, otomatis dari server) — 3 digit --}}
                             <div class="mb-4">
                                 <label class="form-label">Nomor Urut</label>
                                 <input
                                     type="text"
-                                    value="{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}"
+                                    value="{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}"
                                     disabled
                                     class="form-control">
                                 <div class="ledger-help">Nomor urut ini otomatis, berdasarkan surat terakhir yang dibuat.</div>
@@ -551,14 +586,10 @@
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
                             <p class="mb-0" id="previewNumber">
-                                {{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}/---/---/---/{{ date('Y') }}
+                                {{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}/---/---/---/{{ date('Y') }}
                             </p>
                         </div>
 
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="ledger-stamp-key">Klasifikasi</span>
-                            <span class="ledger-stamp-value" id="previewKlasifikasi">-</span>
-                        </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="ledger-stamp-key">Penandatangan</span>
                             <span class="ledger-stamp-value" id="previewSign">-</span>
@@ -566,6 +597,10 @@
                         <div class="d-flex justify-content-between mb-2">
                             <span class="ledger-stamp-key">Tujuan</span>
                             <span class="ledger-stamp-value" id="previewTujuan">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="ledger-stamp-key">Klasifikasi</span>
+                            <span class="ledger-stamp-value" id="previewKlasifikasi">-</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="ledger-stamp-key">Tahun</span>
@@ -579,7 +614,7 @@
                         <h3 class="ledger-status-title mb-3">Status Sistem</h3>
                         <div class="d-flex align-items-center gap-2 ledger-status-line">
                             <span class="ledger-status-dot"></span>
-                            Siap generate nomor #{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}
+                            Siap generate nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
                         </div>
                     </div>
                 </div>
@@ -603,13 +638,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (array_reverse($suratList) as $surat)
+                            @foreach ($suratList as $surat)
                                 <tr>
-                                    <td class="ledger-nomor">{{ $surat['nomor'] }}</td>
-                                    <td class="ledger-perihal">{{ $surat['perihal'] }}</td>
-                                    <td class="ledger-tanggal">{{ $surat['tanggal'] }}</td>
+                                    <td>{{ $surat->nomor_surat }}</td>
+                                    <td>{{ $surat->perihal }}</td>
+                                    <td>{{ $surat->tanggal }}</td>
                                 </tr>
-                            @endforeach
+                                @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -619,28 +654,51 @@
     </div>
 </div>
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
-    const klasifikasiEl = document.getElementById('klasifikasi');
+    // Bikin dropdown Kode Tujuan & Klasifikasi jadi bisa dicari
+    const tujuanChoices = new Choices('#kode_tujuan', {
+        searchEnabled: true,
+        searchPlaceholderValue: 'Cari kode tujuan...',
+        itemSelectText: '',
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: 'Pilih Kode Tujuan',
+    });
+
+    const klasifikasiChoices = new Choices('#klasifikasi', {
+        searchEnabled: true,
+        searchPlaceholderValue: 'Cari klasifikasi...',
+        itemSelectText: '',
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: 'Pilih Klasifikasi Surat',
+    });
+
     const signEl = document.getElementById('signatory');
     const tujuanEl = document.getElementById('kode_tujuan');
-    const seqText = "{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}";
+    const klasifikasiEl = document.getElementById('klasifikasi');
+    const seqText = "{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}";
     const year = "{{ date('Y') }}";
 
     function updatePreview() {
-        const klasifikasi = klasifikasiEl.value || '---';
-        const sign = signEl.value || '---';
-        const tujuan = tujuanEl.value || '---';
+        const sign = signEl.options[signEl.selectedIndex]?.text || "-";
+        const tujuan = tujuanEl.options[tujuanEl.selectedIndex]?.text || "-";
+        const klasifikasi = klasifikasiEl.options[klasifikasiEl.selectedIndex]?.text || "-";
 
         document.getElementById('previewNumber').textContent =
-            `${seqText}/${klasifikasi}/${sign}/${tujuan}/${year}`;
-        document.getElementById('previewKlasifikasi').textContent = klasifikasi === '---' ? '-' : klasifikasi;
-        document.getElementById('previewSign').textContent = sign === '---' ? '-' : sign;
-        document.getElementById('previewTujuan').textContent = tujuan === '---' ? '-' : tujuan;
-    }
+            `${seqText}/${sign}/${tujuan}/${klasifikasi}/${year}`;
 
-    klasifikasiEl.addEventListener('change', updatePreview);
+        document.getElementById('previewSign').textContent = sign;
+        document.getElementById('previewTujuan').textContent = tujuan;
+        document.getElementById('previewKlasifikasi').textContent = klasifikasi;
+        }
+
     signEl.addEventListener('change', updatePreview);
     tujuanEl.addEventListener('change', updatePreview);
+    klasifikasiEl.addEventListener('change', updatePreview);
 </script>
+@endpush
 
 @endsection

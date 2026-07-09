@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\RiwayatSuratController;
 
 
 Route::get('/', function () {
@@ -34,44 +35,36 @@ function simpanSurat(array $data): void
     Storage::put('surat.json', json_encode($data, JSON_PRETTY_PRINT));
 }
 
-Route::middleware('auth')->group(function () {
+// Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', function () {
-        $suratList = bacaSurat();
-        return view('dashboard', compact('suratList'));
-    })->name('dashboard');
+//     Route::get('/dashboard', function () {
+//         $suratList = bacaSurat();
+//         return view('dashboard', compact('suratList'));
+//     })->name('dashboard');
 
     // Tampilkan form tambah surat
-    Route::get('/surat/tambah', function () {
+    Route::middleware('auth')->group(function () {
 
-        $suratList = bacaSurat();
-        $nextSequence = count($suratList) + 1;
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
 
-        // Data referensi dari database, dipakai untuk isi dropdown di form
-        $klasifikasiList   = DB::table('klasifikasi_surat')->orderBy('jenis_surat')->get();
-        $penandatanganList = DB::table('penandatangan')->orderBy('jabatan')->get();
-        $tujuanList        = DB::table('tujuan_surats')->orderBy('nama_tujuan')->get();
+    Route::get('/surat/tambah', [RiwayatSuratController::class,'create'])
+        ->name('tambahsurat');
 
-        return view('tambahsurat', compact(
-            'suratList',
-            'nextSequence',
-            'klasifikasiList',
-            'penandatanganList',
-            'tujuanList'
-        ));
+    Route::post('/surat/tambah', [RiwayatSuratController::class,'store'])
+        ->name('surat.store');
 
-    })->name('tambahsurat');
+    Route::get('/riwayat-surat', [RiwayatSuratController::class,'index'])
+        ->name('riwayatsurat');
 
-    // Proses simpan nomor surat baru
-    Route::post('/surat/tambah', function (Request $request) {
-
-        // isi kode simpan surat
-
-    })->name('surat.store');
-
-    Route::get('/riwayat-surat', function () {
-        return view('riwayatsurat');
-    })->name('riwayatsurat');
-
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('/logout', [LoginController::class,'logout'])
+        ->name('logout');
 });
+
+//     Route::get('/riwayat-surat', function () {
+//         return view('riwayatsurat');
+//     })->name('riwayatsurat');
+
+//     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+// });

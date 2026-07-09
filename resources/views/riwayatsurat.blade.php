@@ -407,33 +407,33 @@
         <div class="card ledger-card" id="archiveCard">
             @if (count($suratList ?? []) > 0)
                 <div id="archiveList">
-                    @foreach (array_reverse($suratList) as $surat)
+                    @foreach ($suratList as $surat)
                         <div class="ledger-row"
-                             data-perihal="{{ strtolower($surat['perihal']) }}"
-                             data-nomor="{{ strtolower($surat['nomor']) }}"
-                             data-klasifikasi="{{ $surat['klasifikasi'] ?? '' }}"
-                             data-tanggal="{{ $surat['tanggal'] }}">
+                             data-perihal="{{ strtolower($surat->perihal) }}"
+                             data-nomor="{{ strtolower($surat->nomor_surat) }}"
+                             data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
+                             data-tanggal="{{ $surat->tanggal }}">
                             <div class="ledger-tab-strip"></div>
                             <div class="ledger-row-body">
                                 <div class="ledger-row-main">
-                                    <p class="ledger-row-nomor">{{ $surat['nomor'] }}</p>
-                                    <p class="ledger-row-perihal">{{ $surat['perihal'] }}</p>
+                                    <p class="ledger-row-nomor">{{ $surat->nomor_surat }}</p>
+                                    <p class="ledger-row-perihal">{{ $surat->perihal }}</p>
                                     <div class="ledger-row-tags">
-                                        @if (!empty($surat['klasifikasi']))
-                                            <span class="ledger-chip ledger-chip-klasifikasi">{{ $surat['klasifikasi'] }}</span>
+                                        @if (!empty($surat->klasifikasiSurat))
+                                            <span class="ledger-chip ledger-chip-klasifikasi">{{ $surat->klasifikasiSurat->kode }}</span>
                                         @endif
-                                        @if (!empty($surat['signatory']))
-                                            <span class="ledger-chip ledger-chip-signatory">{{ $surat['signatory'] }}</span>
+                                        @if (!empty($surat->penandatangan))
+                                            <span class="ledger-chip ledger-chip-signatory">{{ $surat->penandatangan->kode }}</span>
                                         @endif
-                                        @if (!empty($surat['kode_tujuan']))
-                                            <span class="ledger-chip ledger-chip-tujuan">{{ $surat['kode_tujuan'] }}</span>
+                                        @if (!empty($surat->tujuanSurat))
+                                            <span class="ledger-chip ledger-chip-tujuan">{{ $surat->tujuanSurat->kode }}</span>
                                         @endif
                                     </div>
                                 </div>
                                 <div class="ledger-row-meta">
                                     <span class="ledger-row-date">
                                         <i class="fa-regular fa-calendar"></i>
-                                        {{ $surat['tanggal'] }}
+                                        {{ $surat->tanggal }}
                                     </span>
                                 </div>
                             </div>

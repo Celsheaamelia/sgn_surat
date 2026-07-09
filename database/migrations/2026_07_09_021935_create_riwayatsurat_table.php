@@ -12,18 +12,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('riwayatsurat', function (Blueprint $table) {
-            $table->id();
-            $table->string('nomor_surat')->unique();
-            $table->string('perihal');
-            $table->string('penandatangan');
-            $table->string('tujuan_surat');
-            $table->string('klasifikasi_surat');
-            $table->date('tanggal');
 
-            // User yang membuat surat
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+        $table->id();
 
-            $table->timestamps();
+        $table->string('nomor_surat')->unique();
+        $table->string('perihal');
+        $table->date('tanggal');
+
+        $table->foreignId('penandatangan_id')
+            ->constrained('penandatangan')
+            ->cascadeOnDelete();
+
+        $table->foreignId('tujuan_surat_id')
+            ->constrained('tujuan_surats')
+            ->cascadeOnDelete();
+
+        $table->foreignId('klasifikasi_surat_id')
+            ->constrained('klasifikasi_surat')
+            ->cascadeOnDelete();
+
+        $table->foreignId('user_id')
+            ->constrained('users')
+            ->cascadeOnDelete();
+
+        $table->timestamps();
         });
     }
 
