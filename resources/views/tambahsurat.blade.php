@@ -404,19 +404,6 @@
 <div class="ledger-page">
     <div class="container-fluid py-4 py-md-5">
 
-        {{-- Breadcrumb --}}
-        {{-- <nav aria-label="breadcrumb">
-            <ol class="breadcrumb ledger-breadcrumb mb-4">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('dashboard') }}"><i class="fa-solid fa-house me-1"></i>Dashboard</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ Route::has('surat.index') ? route('surat.index') : '#' }}">Letter Management</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Tambah Surat</li>
-            </ol>
-        </nav> --}}
-
         {{-- Alert sukses --}}
         @if (session('success'))
             <div class="alert ledger-alert-success d-flex align-items-center gap-2" role="alert">
@@ -463,31 +450,33 @@
                             </div>
 
                             <div class="row g-3 mb-3">
-                                {{-- Departemen --}}
+                                {{-- Klasifikasi Surat (dari tabel klasifikasi_surat) --}}
                                 <div class="col-md-6">
-                                    <label for="departemen" class="form-label">
-                                        Departemen <span class="ledger-required">*</span>
+                                    <label for="klasifikasi" class="form-label">
+                                        Klasifikasi Surat <span class="ledger-required">*</span>
                                     </label>
-                                    <select name="departemen" id="departemen" required class="form-select">
-                                        <option value="">Pilih Departemen</option>
-                                        <option value="HRD">HRD</option>
-                                        <option value="FIN">Finance</option>
-                                        <option value="OPS">Operasional</option>
-                                        <option value="IT">IT</option>
-                                        <option value="MKT">Marketing</option>
+                                    <select name="klasifikasi" id="klasifikasi" required class="form-select">
+                                        <option value="">Pilih Klasifikasi Surat</option>
+                                        @foreach ($klasifikasiList as $klasifikasi)
+                                            <option value="{{ $klasifikasi->kode }}" @selected(old('klasifikasi') == $klasifikasi->kode)>
+                                                {{ $klasifikasi->kode }} — {{ $klasifikasi->jenis_surat }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
 
-                                {{-- Penandatangan --}}
+                                {{-- Penandatangan (dari tabel penandatangan) --}}
                                 <div class="col-md-6">
                                     <label for="signatory" class="form-label">
                                         Penandatangan <span class="ledger-required">*</span>
                                     </label>
                                     <select name="signatory" id="signatory" required class="form-select">
                                         <option value="">Pilih Penandatangan</option>
-                                        <option value="GM">General Manager (GM)</option>
-                                        <option value="DIR">Direktur (DIR)</option>
-                                        <option value="MGR">Manager (MGR)</option>
+                                        @foreach ($penandatanganList as $penandatangan)
+                                            <option value="{{ $penandatangan->kode }}" @selected(old('signatory') == $penandatangan->kode)>
+                                                {{ $penandatangan->jabatan }} ({{ $penandatangan->kode }})
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -507,19 +496,19 @@
                                         class="form-control">
                                 </div>
 
-                                {{-- Kode Tujuan --}}
+                                {{-- Kode Tujuan (dari tabel tujuan_surats) --}}
                                 <div class="col-md-6">
                                     <label for="kode_tujuan" class="form-label">
                                         Kode Tujuan <span class="ledger-required">*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        name="kode_tujuan"
-                                        id="kode_tujuan"
-                                        required
-                                        placeholder="e.g. EXT, INT, BOD"
-                                        value="{{ old('kode_tujuan') }}"
-                                        class="form-control">
+                                    <select name="kode_tujuan" id="kode_tujuan" required class="form-select">
+                                        <option value="">Pilih Kode Tujuan</option>
+                                        @foreach ($tujuanList as $tujuan)
+                                            <option value="{{ $tujuan->kode }}" @selected(old('kode_tujuan') == $tujuan->kode)>
+                                                {{ $tujuan->kode }} — {{ $tujuan->nama_tujuan }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -562,17 +551,21 @@
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
                             <p class="mb-0" id="previewNumber">
-                                {{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}/---/---/{{ date('Y') }}/{{ date('m') }}/{{ date('d') }}
+                                {{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}/---/---/---/{{ date('Y') }}
                             </p>
                         </div>
 
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="ledger-stamp-key">Departemen</span>
-                            <span class="ledger-stamp-value" id="previewDept">-</span>
+                            <span class="ledger-stamp-key">Klasifikasi</span>
+                            <span class="ledger-stamp-value" id="previewKlasifikasi">-</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="ledger-stamp-key">Penandatangan</span>
                             <span class="ledger-stamp-value" id="previewSign">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="ledger-stamp-key">Tujuan</span>
+                            <span class="ledger-stamp-value" id="previewTujuan">-</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="ledger-stamp-key">Tahun</span>
@@ -627,24 +620,27 @@
 </div>
 
 <script>
-    const deptEl = document.getElementById('departemen');
+    const klasifikasiEl = document.getElementById('klasifikasi');
     const signEl = document.getElementById('signatory');
+    const tujuanEl = document.getElementById('kode_tujuan');
     const seqText = "{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}";
     const year = "{{ date('Y') }}";
-    const month = "{{ date('m') }}";
-    const day = "{{ date('d') }}";
 
     function updatePreview() {
-        const dept = deptEl.value || '---';
+        const klasifikasi = klasifikasiEl.value || '---';
         const sign = signEl.value || '---';
+        const tujuan = tujuanEl.value || '---';
+
         document.getElementById('previewNumber').textContent =
-            `${seqText}/${dept}/${sign}/${year}/${month}/${day}`;
-        document.getElementById('previewDept').textContent = dept === '---' ? '-' : dept;
+            `${seqText}/${klasifikasi}/${sign}/${tujuan}/${year}`;
+        document.getElementById('previewKlasifikasi').textContent = klasifikasi === '---' ? '-' : klasifikasi;
         document.getElementById('previewSign').textContent = sign === '---' ? '-' : sign;
+        document.getElementById('previewTujuan').textContent = tujuan === '---' ? '-' : tujuan;
     }
 
-    deptEl.addEventListener('change', updatePreview);
+    klasifikasiEl.addEventListener('change', updatePreview);
     signEl.addEventListener('change', updatePreview);
+    tujuanEl.addEventListener('change', updatePreview);
 </script>
 
 @endsection
