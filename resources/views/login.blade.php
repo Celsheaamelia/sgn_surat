@@ -4,125 +4,242 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Letter Management System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
 
-    <div class="w-full max-w-md mx-auto p-6">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --brand: #24382e;
+            --brand-dark: #1a2921;
+        }
+
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 420px;
+            padding: 1.5rem;
+        }
+
+        .brand-title {
+            color: var(--brand);
+            font-weight: 700;
+        }
+
+        .login-card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+            overflow: hidden;
+        }
+
+        .login-card .card-header {
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            padding: 1.75rem 1.75rem 1rem;
+        }
+
+        .login-card .card-body {
+            padding: 1.5rem 1.75rem 1.75rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 0.2rem rgba(36,56,46,.15);
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i.leading {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #adb5bd;
+        }
+
+        .input-icon .form-control {
+            padding-left: 2.4rem;
+        }
+
+        .input-icon .form-control.has-toggle {
+            padding-right: 2.4rem;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: none;
+            color: #adb5bd;
+            padding: 0;
+        }
+
+        .toggle-password:hover {
+            color: #6c757d;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--brand);
+            border-color: var(--brand);
+        }
+
+        a.link-brand {
+            color: var(--brand);
+            text-decoration: none;
+        }
+
+        a.link-brand:hover {
+            text-decoration: underline;
+        }
+
+        .btn-brand {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+        }
+
+        .btn-brand:hover {
+            background: var(--brand-dark);
+            border-color: var(--brand-dark);
+            color: #fff;
+        }
+
+        .status-box {
+            background: #eef2ea;
+            border: 1px solid #cdd9c8;
+            color: var(--brand);
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrap">
 
         {{-- Logo / Brand --}}
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-[#24382e]">Admin Panel</h1>
-            <p class="text-gray-500 text-sm mt-1">Letter System</p>
+        <div class="text-center mb-4">
+            <h1 class="h3 brand-title mb-0">Admin Panel</h1>
+            <p class="text-muted small mt-1 mb-0">Letter System</p>
         </div>
 
         {{-- Card Login --}}
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="card login-card">
 
             {{-- Header Card --}}
-            <div class="px-8 pt-8 pb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Masuk ke Akun Anda</h2>
-                <p class="text-sm text-gray-500 mt-1">Silakan masukkan email dan password untuk melanjutkan.</p>
+            <div class="card-header">
+                <h2 class="h5 mb-1">Masuk ke Akun Anda</h2>
+                <p class="text-muted small mb-0">Silakan masukkan email dan password untuk melanjutkan.</p>
             </div>
 
-            <div class="border-t border-gray-100"></div>
+            <div class="card-body">
 
-            {{-- Alert Error --}}
-            @if ($errors->any())
-                <div class="mx-8 mt-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-                    {{ $errors->first() }}
-                </div>
-            @endif
+                {{-- Alert Error --}}
+                @if ($errors->any())
+                    <div class="alert alert-danger py-2 small" role="alert">
+                        {{ $errors->first() }}
+                    </div>
+                @endif
 
-            @if (session('status'))
-                <div class="mx-8 mt-4 bg-[#eef2ea] border border-[#cdd9c8] text-[#24382e] text-sm rounded-lg px-4 py-3">
-                    {{ session('status') }}
-                </div>
-            @endif
+                @if (session('status'))
+                    <div class="status-box px-3 py-2 small mb-3">
+                        {{ session('status') }}
+                    </div>
+                @endif
 
-            {{-- Form Login --}}
-            <form method="POST" action="{{ route('login') }}" class="px-8 py-6 space-y-5">
-                @csrf
+                {{-- Form Login --}}
+                <form method="POST" action="{{ route('login') }}">
+                    @csrf
 
-                {{-- Email --}}
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                        Email <span class="text-red-500">*</span>
+                    {{-- Username --}}
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        Username <span class="text-danger">*</span>
                     </label>
-                    <div class="relative">
-                        <i class="fa-regular fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+
+                    <div class="input-icon">
+                        <i class="fa-regular fa-user leading"></i>
+
                         <input
-                            id="email"
-                            type="email"
-                            name="email"
-                            value="{{ old('email') }}"
+                            id="username"
+                            type="text"
+                            name="username"
+                            value="{{ old('username') }}"
                             required
                             autofocus
-                            placeholder="nama@perusahaan.com"
-                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm
-                                   focus:outline-none focus:ring-2 focus:ring-[#24382e] focus:border-[#24382e]
-                                   @error('email') border-red-400 @enderror"
-                        >
+                            placeholder="Masukkan username"
+                            class="form-control @error('username') is-invalid @enderror">
                     </div>
-                    @error('email')
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
 
-                {{-- Password --}}
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-                        Password <span class="text-red-500">*</span>
-                    </label>
-                    <div class="relative">
-                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            required
-                            placeholder="••••••••"
-                            class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm
-                                   focus:outline-none focus:ring-2 focus:ring-[#24382e] focus:border-[#24382e]
-                                   @error('password') border-red-400 @enderror"
-                        >
-                        <button type="button" onclick="togglePassword()"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            <i id="toggleIcon" class="fa-regular fa-eye"></i>
-                        </button>
+                        @error('username')
+                            <div class="text-danger small mt-1">
+                                {{ $message }}
+                            </div>
+                        @enderror
                     </div>
-                    @error('password')
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
 
-                {{-- Remember + Forgot --}}
-                <div class="flex items-center justify-between text-sm">
-                    <label class="flex items-center gap-2 text-gray-600 cursor-pointer">
-                        <input type="checkbox" name="remember" class="rounded border-gray-300 text-[#24382e] focus:ring-[#24382e]">
-                        Ingat saya
-                    </label>
+                    {{-- Password --}}
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-lock leading"></i>
+                            <input
+                                id="password"
+                                type="password"
+                                name="password"
+                                required
+                                placeholder="••••••••"
+                                class="form-control has-toggle @error('password') is-invalid @enderror">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i id="toggleIcon" class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        @error('password')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="text-[#24382e] hover:underline">
-                            Lupa password?
-                        </a>
-                    @endif
-                </div>
+                    {{-- Remember + Forgot --}}
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="remember" class="form-check-input" id="remember">
+                            <label class="form-check-label small text-muted" for="remember">
+                                Ingat saya
+                            </label>
+                        </div>
 
-                {{-- Submit --}}
-                <button type="submit"
-                        class="w-full bg-[#24382e] hover:bg-[#1a2921] text-white font-medium py-2.5 rounded-lg
-                               transition flex items-center justify-center gap-2 text-sm">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    Masuk
-                </button>
-            </form>
+                        @if (Route::has('password.request'))
+                            <a href="{{ route('password.request') }}" class="link-brand small">
+                                Lupa password?
+                            </a>
+                        @endif
+                    </div>
+
+                    {{-- Submit --}}
+                    <button type="submit" class="btn btn-brand w-100 d-flex align-items-center justify-content-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        Masuk
+                    </button>
+                </form>
+            </div>
         </div>
 
         {{-- Footer --}}
-        <p class="text-center text-xs text-gray-400 mt-6">
+        <p class="text-center text-muted small mt-4 mb-0">
             &copy; {{ date('Y') }} Letter Management System. All rights reserved.
         </p>
     </div>
