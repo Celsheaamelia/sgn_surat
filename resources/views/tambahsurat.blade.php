@@ -39,9 +39,6 @@
         --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
 
-    /* Isolasi stacking context halaman ini, supaya dropdown Choices.js
-       (position: absolute) nggak pernah lompat keluar dan nimpa sidebar
-       dari layout induk. */
     .ledger-page {
         background: var(--ledger);
         font-family: var(--font-body);
@@ -172,7 +169,6 @@
 
     /* ==========================================================================
        Choices.js override — biar nyatu sama tema ledger DAN dikunci lebarnya
-       supaya nggak overflow keluar kolom / nimpa sidebar.
        ========================================================================== */
 
     .ledger-form .choices {
@@ -490,10 +486,14 @@
                                     <label for="signatory" class="form-label">
                                         Penandatangan <span class="ledger-required">*</span>
                                     </label>
+                                    {{-- NOTE: value pakai id (bukan kode) — pastikan controller
+                                         surat.store juga baca 'signatory' sebagai id, bukan kode. --}}
                                     <select name="signatory" id="signatory" required class="form-select">
                                         <option value="">Pilih Penandatangan</option>
                                         @foreach ($penandatanganList as $penandatangan)
-                                            <option value="{{ $penandatangan->id }}">
+                                            <option value="{{ $penandatangan->id }}"
+                                                    data-kode="{{ $penandatangan->kode }}"
+                                                    @selected(old('signatory') == $penandatangan->id)>
                                                 {{ $penandatangan->jabatan }} ({{ $penandatangan->kode }})
                                             </option>
                                         @endforeach
@@ -508,7 +508,9 @@
                                     <select name="kode_tujuan" id="kode_tujuan" required class="form-select">
                                         <option value="">Pilih Kode Tujuan</option>
                                         @foreach ($tujuanList as $tujuan)
-                                            <option value="{{ $tujuan->id }}">
+                                            <option value="{{ $tujuan->id }}"
+                                                    data-kode="{{ $tujuan->kode }}"
+                                                    @selected(old('kode_tujuan') == $tujuan->id)>
                                                 {{ $tujuan->kode }} — {{ $tujuan->nama_tujuan }}
                                             </option>
                                         @endforeach
@@ -525,7 +527,9 @@
                                     <select name="klasifikasi" id="klasifikasi" required class="form-select">
                                         <option value="">Pilih Klasifikasi Surat</option>
                                         @foreach ($klasifikasiList as $klasifikasi)
-                                            <option value="{{ $klasifikasi->id }}">
+                                            <option value="{{ $klasifikasi->id }}"
+                                                    data-kode="{{ $klasifikasi->kode }}"
+                                                    @selected(old('klasifikasi') == $klasifikasi->id)>
                                                 {{ $klasifikasi->kode }} — {{ $klasifikasi->jenis_surat }}
                                             </option>
                                         @endforeach
@@ -547,7 +551,7 @@
                                 </div>
                             </div>
 
-                            {{-- Nomor urut (readonly, otomatis dari server) — 3 digit --}}
+                            {{-- Nomor urut (readonly, otomatis dari server) — 4 digit --}}
                             <div class="mb-4">
                                 <label class="form-label">Nomor Urut</label>
                                 <input
@@ -585,8 +589,9 @@
 
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
+                            {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.0001) --}}
                             <p class="mb-0" id="previewNumber">
-                                {{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}/---/---/---/{{ date('Y') }}
+                                ---/---/---/--------.{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}
                             </p>
                         </div>
 
@@ -603,8 +608,8 @@
                             <span class="ledger-stamp-value" id="previewKlasifikasi">-</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="ledger-stamp-key">Tahun</span>
-                            <span class="ledger-stamp-value">{{ date('Y') }}</span>
+                            <span class="ledger-stamp-key">Tanggal</span>
+                            <span class="ledger-stamp-value" id="previewTanggal">-</span>
                         </div>
                     </div>
                 </div>
@@ -614,7 +619,7 @@
                         <h3 class="ledger-status-title mb-3">Status Sistem</h3>
                         <div class="d-flex align-items-center gap-2 ledger-status-line">
                             <span class="ledger-status-dot"></span>
-                            Siap generate nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
+                            Siap generate nomor #{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}
                         </div>
                     </div>
                 </div>
@@ -640,11 +645,11 @@
                         <tbody>
                             @foreach ($suratList as $surat)
                                 <tr>
-                                    <td>{{ $surat->nomor_surat }}</td>
-                                    <td>{{ $surat->perihal }}</td>
-                                    <td>{{ $surat->tanggal }}</td>
+                                    <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
+                                    <td class="ledger-perihal">{{ $surat->perihal }}</td>
+                                    <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
                                 </tr>
-                                @endforeach
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -679,25 +684,43 @@
     const signEl = document.getElementById('signatory');
     const tujuanEl = document.getElementById('kode_tujuan');
     const klasifikasiEl = document.getElementById('klasifikasi');
-    const seqText = "{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}";
-    const year = "{{ date('Y') }}";
+    const tanggalEl = document.getElementById('tanggal');
+    const seqText = "{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}";
 
+    // "2026-07-10" -> "20260710"
+    function formatTanggal(isoDate) {
+        return isoDate ? isoDate.replaceAll('-', '') : '--------';
+    }
+
+    // Ambil kode singkat dari atribut data-kode option yang dipilih (fallback ke '-')
+    function selectedKode(selectEl) {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        return opt && opt.dataset.kode ? opt.dataset.kode : '-';
+    }
+
+    // Format final: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ
+    // Contoh: SG26-BD05-SKP/20260710.0001
     function updatePreview() {
-        const sign = signEl.options[signEl.selectedIndex]?.text || "-";
-        const tujuan = tujuanEl.options[tujuanEl.selectedIndex]?.text || "-";
-        const klasifikasi = klasifikasiEl.options[klasifikasiEl.selectedIndex]?.text || "-";
+        const sign = selectedKode(signEl);
+        const tujuan = selectedKode(tujuanEl);
+        const klasifikasi = selectedKode(klasifikasiEl);
+        const tanggal = formatTanggal(tanggalEl.value);
 
         document.getElementById('previewNumber').textContent =
-            `${seqText}/${sign}/${tujuan}/${klasifikasi}/${year}`;
-
+            `${sign}/${tujuan}/${klasifikasi}/${tanggal}.${seqText}`;
         document.getElementById('previewSign').textContent = sign;
         document.getElementById('previewTujuan').textContent = tujuan;
         document.getElementById('previewKlasifikasi').textContent = klasifikasi;
-        }
+        document.getElementById('previewTanggal').textContent = tanggalEl.value || '-';
+    }
 
     signEl.addEventListener('change', updatePreview);
     tujuanEl.addEventListener('change', updatePreview);
     klasifikasiEl.addEventListener('change', updatePreview);
+    tanggalEl.addEventListener('change', updatePreview);
+
+    // Sinkronkan preview begitu halaman dimuat (tanggal sudah punya default hari ini)
+    updatePreview();
 </script>
 @endpush
 

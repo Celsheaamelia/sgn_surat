@@ -62,11 +62,17 @@ class RiwayatSuratController extends Controller
 
         $urut = str_pad(RiwayatSurat::count() + 1, 3, '0', STR_PAD_LEFT);
 
+        // Ambil data berdasarkan ID yang dipilih di form
+        $penandatangan = Penandatangan::find($request->signatory);
+        $tujuan = TujuanSurat::find($request->kode_tujuan);
+        $klasifikasi = KlasifikasiSurat::find($request->klasifikasi);
+
+        // Susun nomor surat menggunakan KODE, bukan ID
         $nomor = $urut . '/' .
-                 $request->signatory . '/' .
-                 $request->kode_tujuan . '/' .
-                 $request->klasifikasi . '/' .
-                 date('Y');
+                $klasifikasi->kode . '/' .
+                $penandatangan->kode . '/' .
+                $tujuan->kode . '/' .
+                date('Y');
 
         RiwayatSurat::create([
             'nomor_surat' => $nomor,
