@@ -5,19 +5,6 @@
 <div class="ledger-page">
     <div class="container-fluid py-4 py-md-5">
 
-        {{-- Breadcrumb --}}
-        {{-- <nav aria-label="breadcrumb">
-            <ol class="breadcrumb ledger-breadcrumb mb-4">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('dashboard') }}"><i class="fa-solid fa-house me-1"></i>Dashboard</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ Route::has('surat.index') ? route('surat.index') : '#' }}">Letter Management</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Tambah Surat</li>
-            </ol>
-        </nav> --}}
-
         {{-- Alert sukses --}}
         @if (session('success'))
             <div class="alert ledger-alert-success d-flex align-items-center gap-2" role="alert">

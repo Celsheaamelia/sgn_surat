@@ -161,10 +161,6 @@
         background: #4f6bff;
     }
 
-    /* .riwayat-item:nth-child(2) .riwayat-dot { background: #22c98e; }
-    .riwayat-item:nth-child(3) .riwayat-dot { background: #3ec8ea; }
-    .riwayat-item:nth-child(4) .riwayat-dot { background: #ffb84f; } */
-
     .riwayat-code {
         font-weight: 700;
         color: var(--ink);
