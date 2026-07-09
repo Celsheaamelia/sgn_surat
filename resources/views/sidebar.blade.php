@@ -32,19 +32,6 @@
                 </a>
             </li>
 
-            <li>
-                <a href="#" class="nav-link">
-                    <i class="bi bi-database"></i>
-                    <span>Data Master</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="#" class="nav-link">
-                    <i class="bi bi-person-circle"></i>
-                    <span>Profil</span>
-                </a>
-            </li>
         </ul>
     </div>
 
@@ -58,6 +45,8 @@
 </aside>
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
     /* Sidebar diam di tempat, nggak ikut scroll halaman.
        top disamakan dengan tinggi navbar (lihat .navbar-custom di layout). */
     .sidebar {
@@ -76,6 +65,7 @@
         background: linear-gradient(145deg, #064e3b 0%, #083d2e 100%);
         color: #f8fafc;
         box-shadow: 18px 0 40px rgba(6, 78, 59, 0.18);
+        font-family: 'Inter', -apple-system, sans-serif;
     }
 
     .sidebar-top {
@@ -105,12 +95,16 @@
 
     .logo h4 {
         margin: 0;
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
     }
 
     .logo small {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
         color: rgba(248, 250, 252, 0.7);
     }
 
@@ -132,6 +126,7 @@
         padding: 0.8rem 0.95rem;
         border-radius: 12px;
         transition: all 0.2s ease;
+        font-family: 'Inter', -apple-system, sans-serif;
         font-weight: 600;
     }
 
@@ -170,6 +165,7 @@
         display: grid;
         place-items: center;
         background: linear-gradient(135deg, #f59e0b, #fb923c);
+        font-family: 'Fraunces', Georgia, serif;
         font-weight: 700;
         color: white;
     }
@@ -178,9 +174,13 @@
         display: flex;
         flex-direction: column;
         line-height: 1.2;
+        font-family: 'Inter', -apple-system, sans-serif;
     }
 
     .user-meta small {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
         color: rgba(248, 250, 252, 0.7);
     }
 

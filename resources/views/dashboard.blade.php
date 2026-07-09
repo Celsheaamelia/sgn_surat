@@ -3,6 +3,8 @@
 @section('content')
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
     :root {
         --bg-soft: #f6f7fb;
         --ink: #1a1d29;
@@ -10,21 +12,29 @@
         --card-radius: 20px;
         --shadow-soft: 0 4px 24px rgba(30, 34, 60, 0.06);
         --shadow-hover: 0 10px 30px rgba(30, 34, 60, 0.10);
+
+        /* Font tokens — matched with Riwayat Surat / Manajemen Surat */
+        --font-display: 'Fraunces', Georgia, serif;
+        --font-body: 'Inter', -apple-system, sans-serif;
+        --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
 
     .content-wrap {
         background: var(--bg-soft);
         padding: 2rem 1.75rem;
         min-height: 100%;
+        font-family: var(--font-body);
     }
 
     .page-head h3 {
-        letter-spacing: -0.03em;
+        font-family: var(--font-display);
+        letter-spacing: -0.02em;
         color: var(--ink);
-        font-weight: 800;
+        font-weight: 700;
     }
 
     .page-head p {
+        font-family: var(--font-body);
         color: var(--muted);
         font-size: 0.95rem;
     }
@@ -57,18 +67,20 @@
     .stat-card:hover::before { opacity: 1; }
 
     .stat-label {
+        font-family: var(--font-mono);
         color: var(--muted);
-        font-size: .8rem;
+        font-size: .78rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: .04em;
+        letter-spacing: .05em;
     }
 
     .stat-value {
+        font-family: var(--font-display);
         color: var(--ink);
-        font-weight: 800;
+        font-weight: 700;
         font-size: 2.1rem;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.01em;
         margin-top: .35rem;
     }
 
@@ -89,7 +101,8 @@
     .icon-orb.amber   { background: linear-gradient(135deg,#ffb84f,#f2932a); color:#fff; }
 
     .stat-trend {
-        font-size: .78rem;
+        font-family: var(--font-mono);
+        font-size: .76rem;
         font-weight: 600;
         margin-top: .4rem;
         display: inline-flex;
@@ -115,17 +128,19 @@
     }
 
     .panel-title {
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-weight: 600;
         color: var(--ink);
         letter-spacing: -0.01em;
         margin: 0;
     }
 
     .filter-pill {
+        font-family: var(--font-mono);
         border-radius: 999px;
         border: 1px solid #e6e8f0;
         background: #f8f9fd;
-        font-size: .85rem;
+        font-size: .8rem;
         font-weight: 600;
         color: var(--ink);
         padding: .45rem 1.1rem;
@@ -162,15 +177,18 @@
     }
 
     .riwayat-code {
-        font-weight: 700;
+        font-family: var(--font-mono);
+        font-weight: 600;
         color: var(--ink);
-        font-size: .92rem;
+        font-size: .86rem;
+        letter-spacing: 0.01em;
         display: block;
     }
 
     .riwayat-date {
+        font-family: var(--font-mono);
         color: var(--muted);
-        font-size: .78rem;
+        font-size: .74rem;
     }
 
     .riwayat-footer {
@@ -179,9 +197,10 @@
     }
 
     .riwayat-footer a {
+        font-family: var(--font-mono);
         color: #4f6bff;
         font-weight: 700;
-        font-size: .9rem;
+        font-size: .85rem;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
@@ -410,7 +429,8 @@ const chart = new Chart(ctx, {
             legend: { display: false },
             tooltip: {
                 backgroundColor: '#1a1d29',
-                titleFont: { weight: '600' },
+                titleFont: { weight: '600', family: "'Inter', sans-serif" },
+                bodyFont: { family: "'IBM Plex Mono', monospace" },
                 padding: 10,
                 cornerRadius: 10,
                 displayColors: false
@@ -421,11 +441,11 @@ const chart = new Chart(ctx, {
             x: {
                 grid: { display: false },
                 border: { display: false },
-                ticks: { color: '#8a8fa3', font: { size: 12 } }
+                ticks: { color: '#8a8fa3', font: { size: 12, family: "'IBM Plex Mono', monospace" } }
             },
             y: {
                 beginAtZero: true,
-                ticks: { color: '#8a8fa3', font: { size: 12 } },
+                ticks: { color: '#8a8fa3', font: { size: 12, family: "'IBM Plex Mono', monospace" } },
                 grid: { color: '#eef0f6' },
                 border: { display: false }
             }
