@@ -15,7 +15,7 @@
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-[#24382e]">Admin Panel</h1>
             <p class="text-gray-500 text-sm mt-1">Letter System</p>
-        </div>
+        </div>v 
 
         {{-- Card Login --}}
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">

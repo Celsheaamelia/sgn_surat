@@ -3,80 +3,21 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\LoginController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
+// Login
+Route::middleware('guest')->group(function () {
 
-$hardcodedUsers = [
-    'admin@example.com' => 'password123',
-    'user@example.com'  => 'user123',
-];
+    Route::get('/login', [LoginController::class,'index'])->name('login');
+    Route::post('/login', [LoginController::class,'login']);
 
-// Tampilkan halaman login
-Route::get('/login', function () {
-    return view('login');
-})->name('login');
-
-Route::get('/dashboard', function () {
-
-    if (!session('logged_in')) {
-        return redirect('/login');
-    }
-
-    return view('dashboard');
-
-})->name('dashboard');
-
-// Proses login
-Route::post('/login', function (Request $request) use ($hardcodedUsers) {
-    $credentials = $request->validate([
-        'email'    => ['required', 'email'],
-        'password' => ['required'],
-    ]);
-
-    $email    = $credentials['email'];
-    $password = $credentials['password'];
-
-    if (isset($hardcodedUsers[$email]) && $hardcodedUsers[$email] === $password) {
-        $request->session()->put('logged_in', true);
-        $request->session()->put('user_email', $email);
-        $request->session()->regenerate();
-
-        return redirect()->intended('/dashboard');
-    }
-
-    return back()->withErrors([
-        'email' => 'Email atau password yang Anda masukkan salah.',
-    ])->onlyInput('email');
 });
-
-// Halaman setelah login berhasil
-Route::get('/dashboard', function () {
-
-    if (!session('logged_in')) {
-        return redirect('/login');
-    }
-
-    $suratList = bacaSurat();
-
-    return view('dashboard', compact('suratList'));
-
-})->name('dashboard');
-
-// Logout
-Route::post('/logout', function (Request $request) {
-    $request->session()->forget(['logged_in', 'user_email']);
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-    return redirect('/login');
-})->name('logout');
-
-// ==================================================
-// FITUR: TAMBAH NOMOR SURAT (tanpa database, pakai JSON file)
-// ==================================================
 
 // Helper: baca data surat dari file JSON
 function bacaSurat(): array
@@ -93,65 +34,77 @@ function simpanSurat(array $data): void
     Storage::put('surat.json', json_encode($data, JSON_PRETTY_PRINT));
 }
 
-// Tampilkan form tambah surat
-Route::get('/surat/tambah', function () {
-    if (!session('logged_in')) {
-        return redirect('/login');
-    }
+Route::middleware('auth')->group(function () {
 
-    $suratList     = bacaSurat();
-    $nextSequence  = count($suratList) + 1;
+    Route::get('/dashboard', function () {
+        $suratList = bacaSurat();
+        return view('dashboard', compact('suratList'));
+    })->name('dashboard');
 
-    return view('tambahsurat', compact('suratList', 'nextSequence'));
-})->name('tambahsurat');
+    // Tampilkan form tambah surat
+    Route::get('/surat/tambah', function () {
 
-// Proses simpan nomor surat baru
-Route::post('/surat/tambah', function (Request $request) {
-    if (!session('logged_in')) {
-        return redirect('/login');
-    }
+        $suratList = bacaSurat();
+        $nextSequence = count($suratList) + 1;
 
-    $validated = $request->validate([
-        'perihal'     => ['required', 'string', 'max:255'],
-        'departemen'  => ['required', 'string'],
-        'signatory'   => ['required', 'string'],
-        'tanggal'     => ['required', 'date'],
-        'kode_tujuan' => ['required', 'string'],
-    ]);
+        // Data referensi dari database, dipakai untuk isi dropdown di form
+        $klasifikasiList   = DB::table('klasifikasi_surat')->orderBy('jenis_surat')->get();
+        $penandatanganList = DB::table('penandatangan')->orderBy('jabatan')->get();
+        $tujuanList        = DB::table('tujuan_surats')->orderBy('nama_tujuan')->get();
 
-    $suratList    = bacaSurat();
-    $nextSequence = count($suratList) + 1;
-    $urut         = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+        return view('tambahsurat', compact(
+            'suratList',
+            'nextSequence',
+            'klasifikasiList',
+            'penandatanganList',
+            'tujuanList'
+        ));
 
-    $tanggal = \Carbon\Carbon::parse($validated['tanggal']);
+    })->name('tambahsurat');
 
-    $nomorSurat = sprintf(
-        '%s/%s/%s/%s/%s/%s',
-        $urut,
-        $validated['departemen'],
-        $validated['signatory'],
-        $tanggal->format('Y'),
-        $tanggal->format('m'),
-        $tanggal->format('d')
-    );
+    // Proses simpan nomor surat baru
+    Route::post('/surat/tambah', function (Request $request) {
 
-    $suratList[] = [
-        'nomor'       => $nomorSurat,
-        'perihal'     => $validated['perihal'],
-        'departemen'  => $validated['departemen'],
-        'signatory'   => $validated['signatory'],
-        'kode_tujuan' => $validated['kode_tujuan'],
-        'tanggal'     => $tanggal->format('d-m-Y'),
-        'dibuat_oleh' => session('user_email'),
-        'dibuat_pada' => now()->toDateTimeString(),
-    ];
+        $validated = $request->validate([
+            'perihal'     => 'required|string|max:255',
+            'klasifikasi' => 'required|string',
+            'signatory'   => 'required|string',
+            'kode_tujuan' => 'required|string',
+            'tanggal'     => 'required|date',
+        ]);
 
-    simpanSurat($suratList);
+        $suratList = bacaSurat();
+        $nextSequence = count($suratList) + 1;
+        $seqText = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+        $tanggalCompact = date('Ymd', strtotime($validated['tanggal'])); // 2026-07-10 -> 20260710
 
-    return redirect()->route('tambahsurat')->with('success', "Nomor surat berhasil dibuat: {$nomorSurat}");
-})->name('surat.store');
+        // Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ
+        // Contoh: SG26-BD05-SKP/20260710.0001
+        $nomorSurat = "{$validated['signatory']}-{$validated['kode_tujuan']}-{$validated['klasifikasi']}/{$tanggalCompact}.{$seqText}";
 
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->name('dashboard');
+        $suratList[] = [
+            'nomor'       => $nomorSurat,
+            'perihal'     => $validated['perihal'],
+            'klasifikasi' => $validated['klasifikasi'],
+            'signatory'   => $validated['signatory'],
+            'kode_tujuan' => $validated['kode_tujuan'],
+            'tanggal'     => $validated['tanggal'],
+        ];
 
+        simpanSurat($suratList);
+
+        return redirect()->route('tambahsurat')->with('success', "Surat berhasil dibuat dengan nomor {$nomorSurat}");
+
+    })->name('surat.store');
+
+    Route::get('/riwayat-surat', function () {
+
+        $suratList = bacaSurat();
+        $klasifikasiList = DB::table('klasifikasi_surat')->orderBy('kode')->get();
+
+        return view('riwayatsurat', compact('suratList', 'klasifikasiList'));
+
+    })->name('riwayatsurat');
+
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+});
