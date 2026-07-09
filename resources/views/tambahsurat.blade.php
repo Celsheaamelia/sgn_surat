@@ -591,7 +591,7 @@
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
                             {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.0001) --}}
                             <p class="mb-0" id="previewNumber">
-                                ---/---/---/--------.{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}
+                                ---/---/---/--------.{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
                             </p>
                         </div>
 
@@ -619,7 +619,7 @@
                         <h3 class="ledger-status-title mb-3">Status Sistem</h3>
                         <div class="d-flex align-items-center gap-2 ledger-status-line">
                             <span class="ledger-status-dot"></span>
-                            Siap generate nomor #{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}
+                            Siap generate nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
                         </div>
                     </div>
                 </div>
@@ -685,7 +685,7 @@
     const tujuanEl = document.getElementById('kode_tujuan');
     const klasifikasiEl = document.getElementById('klasifikasi');
     const tanggalEl = document.getElementById('tanggal');
-    const seqText = "{{ str_pad($nextSequence, 4, '0', STR_PAD_LEFT) }}";
+    const seqText = "{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}";
 
     // "2026-07-10" -> "20260710"
     function formatTanggal(isoDate) {
