@@ -158,112 +158,117 @@
     }
 
     /* ==========================================================================
-       Archive list — index-card rows, ledger-toned
+       Archive table — same ledger surface/ink language, now as a real <table>
        ========================================================================== */
 
     #archiveCard {
         overflow: hidden;
     }
 
-    .ledger-row {
-        display: flex;
-        align-items: stretch;
+    .ledger-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+
+    .ledger-table thead th {
+        background: var(--ledger);
+        color: var(--ink-soft);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 600;
+        border-bottom: none;
+        padding: 0.9rem 1.5rem;
+        white-space: nowrap;
+    }
+
+    .ledger-table tbody tr {
         border-top: 1px solid var(--ledger-line);
         transition: background 0.15s ease;
     }
 
-    .ledger-row:first-child {
-        border-top: none;
-    }
-
-    .ledger-row:hover {
+    .ledger-table tbody tr:hover {
         background: var(--brass-tint);
     }
 
-    .ledger-tab-strip {
-        width: 6px;
-        flex-shrink: 0;
-        background: var(--brass);
+    .ledger-table tbody td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+        font-size: 0.9rem;
     }
 
-    .ledger-row-body {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1.1rem 1.75rem;
-        flex-wrap: wrap;
-    }
-
-    .ledger-row-main {
-        min-width: 0;
-    }
-
-    .ledger-row-nomor {
-        margin: 0 0 0.3rem 0;
+    .ledger-table .ledger-nomor {
+        color: var(--brass-dark);
         font-family: var(--font-mono);
         font-weight: 600;
-        font-size: 0.86rem;
+        font-size: 0.84rem;
         letter-spacing: 0.02em;
-        color: var(--brass-dark);
         word-break: break-all;
     }
 
-    .ledger-row-perihal {
-        margin: 0 0 0.4rem 0;
-        font-size: 0.94rem;
+    .ledger-table .ledger-perihal {
         color: var(--ink);
     }
 
-    .ledger-row-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
+    .ledger-table .ledger-tujuan,
+    .ledger-table .ledger-signatory {
+        color: var(--ink-soft);
     }
 
-    .ledger-row-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.9rem;
-        flex-shrink: 0;
+    .ledger-table .ledger-tanggal {
+        color: var(--ink-soft);
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        white-space: nowrap;
     }
 
-    /* Chips — one per related entity: klasifikasi, penandatangan, tujuan */
-    .ledger-chip {
+    /* Status pill */
+    .ledger-status-pill {
         font-family: var(--font-mono);
         font-size: 0.68rem;
         font-weight: 600;
-        letter-spacing: 0.06em;
-        padding: 0.28rem 0.6rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 0.32rem 0.7rem;
         border-radius: 999px;
         white-space: nowrap;
+        display: inline-block;
     }
 
-    .ledger-chip-klasifikasi {
-        background: var(--brass-tint);
-        color: var(--brass-dark);
-    }
-
-    .ledger-chip-signatory {
+    .ledger-status-pill.is-uploaded {
         background: var(--success-bg);
         color: var(--success);
+        border: 1px solid #cfe2d4;
     }
 
-    .ledger-chip-tujuan {
-        background: var(--ledger);
-        color: var(--ink-soft);
-        border: 1px solid var(--ledger-line);
+    .ledger-status-pill.is-pending {
+        background: var(--brass-tint);
+        color: var(--brass-dark);
+        border: 1px solid rgba(169,129,47,0.25);
     }
 
-    .ledger-row-date {
-        font-family: var(--font-mono);
-        font-size: 0.78rem;
+    .ledger-btn-detail {
+        background: transparent;
+        border: 1px solid var(--ink);
         color: var(--ink-soft);
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 0.5rem;
         white-space: nowrap;
-        display: flex;
+        text-decoration: none;
+        display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.35rem;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .ledger-btn-detail:hover {
+        background: var(--ink);
+        color: #fff;
     }
 
     /* ==========================================================================
@@ -307,20 +312,12 @@
     }
 
     /* ==========================================================================
-       Responsive
+       Responsive — let the table scroll horizontally on small screens
+       instead of squeezing/breaking columns
        ========================================================================== */
 
-    @media (max-width: 640px) {
-        .ledger-row-body {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.6rem;
-        }
-
-        .ledger-row-meta {
-            width: 100%;
-            justify-content: flex-start;
-        }
+    .ledger-table-scroll {
+        overflow-x: auto;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -332,19 +329,6 @@
 
 <div class="ledger-page" id="riwayatPage">
     <div class="container-fluid py-4 py-md-5">
-
-        {{-- Breadcrumb --}}
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb ledger-breadcrumb mb-4">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('dashboard') }}"><i class="fa-solid fa-house me-1"></i>Dashboard</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ Route::has('surat.index') ? route('surat.index') : '#' }}">Letter Management</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Riwayat Surat</li>
-            </ol>
-        </nav>
 
         {{-- Alert sukses (jika ada aksi hapus dll) --}}
         @if (session('success'))
@@ -360,7 +344,6 @@
                 <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
                     <div>
                         <h2 class="ledger-title mb-1">Riwayat Surat</h2>
-                        <p class="ledger-subtitle mb-0">Arsip seluruh nomor surat yang pernah diterbitkan.</p>
                     </div>
                     <div id="totalCounter">
                         <span class="ledger-badge">
@@ -403,42 +386,52 @@
             </div>
         </div>
 
-        {{-- Archive list --}}
+        {{-- Archive table --}}
         <div class="card ledger-card" id="archiveCard">
             @if (count($suratList ?? []) > 0)
-                <div id="archiveList">
-                    @foreach ($suratList as $surat)
-                        <div class="ledger-row"
-                             data-perihal="{{ strtolower($surat->perihal) }}"
-                             data-nomor="{{ strtolower($surat->nomor_surat) }}"
-                             data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
-                             data-tanggal="{{ $surat->tanggal }}">
-                            <div class="ledger-tab-strip"></div>
-                            <div class="ledger-row-body">
-                                <div class="ledger-row-main">
-                                    <p class="ledger-row-nomor">{{ $surat->nomor_surat }}</p>
-                                    <p class="ledger-row-perihal">{{ $surat->perihal }}</p>
-                                    <div class="ledger-row-tags">
-                                        @if (!empty($surat->klasifikasiSurat))
-                                            <span class="ledger-chip ledger-chip-klasifikasi">{{ $surat->klasifikasiSurat->kode }}</span>
-                                        @endif
-                                        @if (!empty($surat->penandatangan))
-                                            <span class="ledger-chip ledger-chip-signatory">{{ $surat->penandatangan->kode }}</span>
-                                        @endif
-                                        @if (!empty($surat->tujuanSurat))
-                                            <span class="ledger-chip ledger-chip-tujuan">{{ $surat->tujuanSurat->kode }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <div class="ledger-row-meta">
-                                    <span class="ledger-row-date">
-                                        <i class="fa-regular fa-calendar"></i>
-                                        {{ $surat->tanggal }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
+                <div class="ledger-table-scroll">
+                    <table class="ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Nomor Surat</th>
+                                <th>Perihal</th>
+                                <th>Tujuan</th>
+                                <th>Penandatangan</th>
+                                <th>Tanggal Dibuat</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="archiveList">
+                            @foreach ($suratList as $surat)
+                                @php
+                                    $isUploaded = ($surat->status ?? 'Belum Terupload') === 'Terupload';
+                                @endphp
+                                <tr
+                                    data-perihal="{{ strtolower($surat->perihal) }}"
+                                    data-nomor="{{ strtolower($surat->nomor_surat) }}"
+                                    data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
+                                    data-tanggal="{{ $surat->tanggal }}">
+                                    <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
+                                    <td class="ledger-perihal">{{ $surat->perihal }}</td>
+                                    <td class="ledger-tujuan">{{ $surat->tujuanSurat->nama_tujuan ?? '-' }}</td>
+                                    <td class="ledger-signatory">{{ $surat->penandatangan->jabatan ?? '-' }}</td>
+                                    <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
+                                    <td>
+                                        <span class="ledger-status-pill {{ $isUploaded ? 'is-uploaded' : 'is-pending' }}">
+                                            {{ $surat->status ?? 'Belum Terupload' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('surat.show', $surat->id) }}" class="ledger-btn-detail">
+                                            <i class="fa-regular fa-eye"></i>
+                                            Upload
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
 
                 <div id="emptySearchState" class="d-none">
@@ -471,7 +464,7 @@
 
         const query = searchInput.value.trim().toLowerCase();
         const klasifikasi = filterKlasifikasi.value;
-        const rows = Array.from(archiveList.querySelectorAll('.ledger-row'));
+        const rows = Array.from(archiveList.querySelectorAll('tr'));
 
         let visibleCount = 0;
 
@@ -496,7 +489,7 @@
     function applySort() {
         if (!archiveList) return;
 
-        const rows = Array.from(archiveList.querySelectorAll('.ledger-row'));
+        const rows = Array.from(archiveList.querySelectorAll('tr'));
         const direction = sortOrder.value;
 
         rows.sort((a, b) => {

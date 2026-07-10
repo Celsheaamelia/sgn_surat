@@ -34,14 +34,6 @@ function simpanSurat(array $data): void
 {
     Storage::put('surat.json', json_encode($data, JSON_PRETTY_PRINT));
 }
-
-// Route::middleware('auth')->group(function () {
-
-//     Route::get('/dashboard', function () {
-//         $suratList = bacaSurat();
-//         return view('dashboard', compact('suratList'));
-//     })->name('dashboard');
-
     // Tampilkan form tambah surat
     Route::middleware('auth')->group(function () {
 
@@ -58,13 +50,17 @@ function simpanSurat(array $data): void
     Route::get('/riwayat-surat', [RiwayatSuratController::class,'index'])
         ->name('riwayatsurat');
 
+    Route::get('/riwayat-surat/{riwayatSurat}', [RiwayatSuratController::class,'show'])
+    ->name('surat.show');
+
+    Route::get('/riwayat-surat/{riwayatSurat}/upload', [RiwayatSuratController::class,'uploadForm'])
+    ->name('surat.upload.form');
+
+    Route::post('/riwayat-surat/{riwayatSurat}/upload', [RiwayatSuratController::class,'upload'])
+        ->name('surat.upload');
+
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');
 });
 
-//     Route::get('/riwayat-surat', function () {
-//         return view('riwayatsurat');
-//     })->name('riwayatsurat');
 
-//     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-// });

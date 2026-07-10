@@ -12,6 +12,7 @@ class RiwayatSurat extends Model
         'nomor_surat',
         'perihal',
         'tanggal',
+        'status',
         'penandatangan_id',
         'tujuan_surat_id',
         'klasifikasi_surat_id',
