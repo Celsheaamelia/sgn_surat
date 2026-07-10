@@ -59,6 +59,18 @@ function simpanSurat(array $data): void
     Route::post('/riwayat-surat/{riwayatSurat}/upload', [RiwayatSuratController::class,'upload'])
         ->name('surat.upload');
 
+    Route::get('/surat/upload/{surat}', [RiwayatSuratController::class, 'showUpload'])->name('surat.upload.show');
+    Route::post('/surat/upload/{surat}', [RiwayatSuratController::class, 'storeUpload'])->name('surat.upload.store');
+
+    Route::delete('/surat/upload/{surat}', [RiwayatSuratController::class, 'deleteUpload'])
+    ->name('surat.upload.delete');
+
+    Route::get('/surat/next-sequence', [RiwayatSuratController::class, 'getNextSequence'])
+    ->name('surat.next-sequence');
+
+//         Route::get('/surat/{id}/upload', [SuratController::class, 'showUpload'])->name('surat.upload');
+// Route::post('/surat/{id}/upload', [SuratController::class, 'storeUpload'])->name('surat.upload.store');
+
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');
 });

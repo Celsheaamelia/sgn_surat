@@ -12,11 +12,12 @@ class RiwayatSurat extends Model
         'nomor_surat',
         'perihal',
         'tanggal',
-        'status',
         'penandatangan_id',
         'tujuan_surat_id',
         'klasifikasi_surat_id',
         'user_id',
+        'status',
+        'uploaded_at',
     ];
 
     public function user()
@@ -37,5 +38,10 @@ class RiwayatSurat extends Model
     public function klasifikasiSurat()
     {
         return $this->belongsTo(KlasifikasiSurat::class);
+    }
+
+    public function detailSurat()
+    {
+        return $this->hasOne(DetailSurat::class, 'riwayatsurat_id');
     }
 }

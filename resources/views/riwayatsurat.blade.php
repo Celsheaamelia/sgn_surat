@@ -423,11 +423,13 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{{ route('surat.show', $surat->id) }}" class="ledger-btn-detail">
+                                        <a href="{{ route('surat.upload.show', $surat->id) }}" class="ledger-btn-detail">
                                             <i class="fa-regular fa-eye"></i>
-                                            Upload
+                                            Detail
                                         </a>
+
                                     </td>
+
                                 </tr>
                             @endforeach
                         </tbody>
