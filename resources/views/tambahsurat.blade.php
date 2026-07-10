@@ -458,8 +458,7 @@
 
                     <div class="card-header ledger-card-header">
                         <h2 class="ledger-title">Buat Nomor Surat</h2>
-                        <p class="ledger-subtitle mb-0">Isi data di bawah untuk generate nomor surat baru.</p>
-                    </div>
+                   </div>
 
                     <div class="card-body">
                         <form method="POST" action="{{ route('surat.store') }}" class="ledger-form" id="suratForm">

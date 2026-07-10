@@ -30,6 +30,15 @@ class RiwayatSuratController extends Controller
         ));
     }
 
+    public function show(RiwayatSurat $riwayatSurat)
+    {
+        $riwayatSurat->load(['penandatangan', 'tujuanSurat', 'klasifikasiSurat', 'user']);
+
+        return view('surat.detail', [
+            'surat' => $riwayatSurat,
+        ]);
+    }
+
     public function create()
     {
         $penandatanganList = Penandatangan::orderBy('jabatan')->get();

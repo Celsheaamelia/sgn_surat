@@ -75,8 +75,9 @@
         letter-spacing: .05em;
     }
 
+    /* Angka statistik pakai font body (Inter), bukan serif — biar nggak melengkung */
     .stat-value {
-        font-family: var(--font-display);
+        font-family: var(--font-body);
         color: var(--ink);
         font-weight: 700;
         font-size: 2.1rem;
@@ -127,8 +128,9 @@
         padding: 1.25rem 1.5rem;
     }
 
+    /* Judul panel pakai font body juga, bukan serif */
     .panel-title {
-        font-family: var(--font-display);
+        font-family: var(--font-body);
         font-weight: 600;
         color: var(--ink);
         letter-spacing: -0.01em;
@@ -149,8 +151,8 @@
     }
 
     .filter-pill:focus {
-        border-color: #4f6bff;
-        box-shadow: 0 0 0 3px rgba(79,107,255,.12);
+        border-color: #0f6b45;
+        box-shadow: 0 0 0 3px rgba(15,107,69,.12);
     }
 
     .panel-card .card-body { padding: 1.5rem; }
@@ -173,7 +175,7 @@
         border-radius: 50%;
         margin-top: .45rem;
         flex-shrink: 0;
-        background: #4f6bff;
+        background: #0f6b45;
     }
 
     .riwayat-code {
@@ -198,7 +200,7 @@
 
     .riwayat-footer a {
         font-family: var(--font-mono);
-        color: #4f6bff;
+        color: #0f6b45;
         font-weight: 700;
         font-size: .85rem;
         text-decoration: none;
@@ -397,9 +399,10 @@ const dataChart = {
 
 const ctx = document.getElementById('suratChart');
 
+/* Warna grafik: hijau tua, samain sama tema halaman lain (bukan biru lagi) */
 const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
-gradient.addColorStop(0, 'rgba(79,107,255,.28)');
-gradient.addColorStop(1, 'rgba(79,107,255,0)');
+gradient.addColorStop(0, 'rgba(15,107,69,.28)');
+gradient.addColorStop(1, 'rgba(15,107,69,0)');
 
 const chart = new Chart(ctx, {
     type: 'line',
@@ -408,14 +411,14 @@ const chart = new Chart(ctx, {
         datasets: [{
             label: 'Nomor Surat',
             data: dataChart[7].data,
-            borderColor: '#4f6bff',
+            borderColor: '#0f6b45',
             backgroundColor: gradient,
             fill: true,
             tension: 0.45,
             pointRadius: 4,
             pointHoverRadius: 6,
             pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#4f6bff',
+            pointBorderColor: '#0f6b45',
             pointBorderWidth: 2,
             borderWidth: 3
         }]
