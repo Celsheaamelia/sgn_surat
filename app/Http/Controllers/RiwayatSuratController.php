@@ -70,8 +70,6 @@ class RiwayatSuratController extends Controller
             'tanggal' => 'required|date',
         ]);
 
-        $tanggal = $request->tanggal;
-        $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $tanggal)->count();
         $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $request->tanggal)->count();
         $urut = str_pad($jumlahHariIni + 1, 3, '0', STR_PAD_LEFT);
 
@@ -97,6 +95,7 @@ class RiwayatSuratController extends Controller
             'user_id' => Auth::id(),
         ]);
 
+<<<<<<< HEAD
         return redirect()->route('tambahsurat')
             ->with('success', 'Surat berhasil dibuat.')
             ->with('created_nomor', $nomor);
@@ -172,4 +171,32 @@ class RiwayatSuratController extends Controller
             'sequence' => str_pad($jumlah + 1, 3, '0', STR_PAD_LEFT)
         ]);
     }
+=======
+       return redirect()->route('riwayatsurat')
+    ->with('success', 'Surat berhasil dibuat.');
+}
+
+public function showUpload($id)
+{
+    return redirect()->back();
+}
+
+public function storeUpload(Request $request, $id)
+{
+    return response()->json(['message' => 'Not implemented'], 501);
+}
+
+public function deleteUpload($id)
+{
+    return response()->json(['message' => 'Not implemented'], 501);
+}
+
+public function getNextSequence(Request $request)
+{
+    $tanggal = $request->input('tanggal', now()->toDateString());
+    $count = RiwayatSurat::whereDate('tanggal', $tanggal)->count();
+    $next = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+    return response()->json(['nextSequence' => $next]);
+}
+>>>>>>> b911605fc3e5bb1ac9b2c7e034508cf072cd7125
 }
