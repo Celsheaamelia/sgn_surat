@@ -378,6 +378,7 @@
         {{-- Archive list --}}
         <div class="card archive-card" id="archiveCard">
             @if (count($suratList ?? []) > 0)
+<<<<<<< HEAD
                 <div id="archiveList">
                 <div id="archiveList">
                     @foreach ($suratList->reverse() as $surat)
@@ -401,6 +402,53 @@
                         </div>
                     @endforeach
                 </div>
+=======
+                <div class="ledger-table-scroll">
+                    <table class="ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Nomor Surat</th>
+                                <th>Perihal</th>
+                                <th>Tujuan</th>
+                                <th>Penandatangan</th>
+                                <th>Tanggal Dibuat</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="archiveList">
+                            @foreach ($suratList as $surat)
+                                @php
+                                    $isUploaded = ($surat->status ?? 'Belum Terupload') === 'Terupload';
+                                @endphp
+                                <tr
+                                    data-perihal="{{ strtolower($surat->perihal) }}"
+                                    data-nomor="{{ strtolower($surat->nomor_surat) }}"
+                                    data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
+                                    data-tanggal="{{ $surat->tanggal }}">
+                                    <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
+                                    <td class="ledger-perihal">{{ $surat->perihal }}</td>
+                                    <td class="ledger-tujuan">{{ $surat->tujuanSurat->nama_tujuan ?? '-' }}</td>
+                                    <td class="ledger-signatory">{{ $surat->penandatangan->jabatan ?? '-' }}</td>
+                                    <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
+                                    <td>
+                                        <span class="ledger-status-pill {{ $isUploaded ? 'is-uploaded' : 'is-pending' }}">
+                                            {{ $surat->status ?? 'Belum Terupload' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('surat.upload.show', $surat->id) }}" class="ledger-btn-detail">
+                                            <i class="fa-regular fa-eye"></i>
+                                            Detail
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+>>>>>>> cb6e0ef5e3af145322159bc0ccf2ff4addafcefe
                 </div>
 
                 <div id="emptySearchState" class="d-none">

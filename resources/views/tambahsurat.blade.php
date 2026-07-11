@@ -555,7 +555,8 @@
                                 <label class="form-label">Nomor Urut</label>
                                 <input
                                     type="text"
-                                    value="{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}"
+                                    id="nomorUrut"
+                                    value="{{ str_pad($nextSequence,3,'0',STR_PAD_LEFT) }}"
                                     disabled
                                     class="form-control">
                                 <div class="ledger-help">Nomor urut ini otomatis, berdasarkan surat terakhir yang dibuat.</div>
@@ -661,6 +662,19 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
+    async function loadSequence() {
+        if (!tanggalEl.value) return;
+        const response = await fetch(
+            `/surat/next-sequence?tanggal=${tanggalEl.value}`
+        );
+        const data = await response.json();
+        seqText = data.sequence;
+        // update input Nomor Urut
+        document.getElementById('nomorUrut').value = seqText;
+        // update preview
+        updatePreview();
+    }
+
     // Bikin dropdown Kode Tujuan & Klasifikasi jadi bisa dicari
     const tujuanChoices = new Choices('#kode_tujuan', {
         searchEnabled: true,
@@ -684,7 +698,7 @@
     const tujuanEl = document.getElementById('kode_tujuan');
     const klasifikasiEl = document.getElementById('klasifikasi');
     const tanggalEl = document.getElementById('tanggal');
-    const seqText = "{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}";
+    let seqText = "001";
 
     // "2026-07-10" -> "20260710"
     function formatTanggal(isoDate) {
@@ -716,10 +730,8 @@
     signEl.addEventListener('change', updatePreview);
     tujuanEl.addEventListener('change', updatePreview);
     klasifikasiEl.addEventListener('change', updatePreview);
-    tanggalEl.addEventListener('change', updatePreview);
-
-    // Sinkronkan preview begitu halaman dimuat (tanggal sudah punya default hari ini)
-    updatePreview();
+    tanggalEl.addEventListener('change', loadSequence);
+    loadSequence();
 </script>
 @endpush
 
