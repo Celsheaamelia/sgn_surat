@@ -70,8 +70,6 @@ class RiwayatSuratController extends Controller
             'tanggal' => 'required|date',
         ]);
 
-        $tanggal = $request->tanggal;
-        $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $tanggal)->count();
         $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $request->tanggal)->count();
         $urut = str_pad($jumlahHariIni + 1, 3, '0', STR_PAD_LEFT);
 
@@ -97,82 +95,30 @@ class RiwayatSuratController extends Controller
             'user_id' => Auth::id(),
         ]);
 
-        return redirect()->route('riwayatsurat')
-            ->with('success', 'Surat berhasil dibuat.');
-    }
-<<<<<<< HEAD
+       return redirect()->route('riwayatsurat')
+    ->with('success', 'Surat berhasil dibuat.');
 }
-=======
 
-    public function showUpload($id)
-    {
-        $surat = RiwayatSurat::with([
-            'klasifikasiSurat',
-            'tujuanSurat',
-            'penandatangan',
-            'detailSurat'   // tambahkan ini
-        ])->findOrFail($id);
-
-        return view('suratupload', compact('surat'));
-    }
-
-    public function storeUpload(Request $request, $id)
-    {
-        $request->validate([
-            'file_surat' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        ]);
-
-        $surat = RiwayatSurat::findOrFail($id);
-
-        $filePath = $request->file('file_surat')->store('surat', 'public');
-
-        DetailSurat::updateOrCreate(
-            [
-                'riwayatsurat_id' => $surat->id,
-            ],
-            [
-                'file_path'   => $filePath,
-                'file_name'   => $request->file('file_surat')->getClientOriginalName(),
-                'uploaded_at' => now(),
-            ]
-        );
-
-        $surat->update([
-            'status' => 'Terupload',
-        ]);
-
-        return redirect()
-            ->route('surat.upload.show', $surat->id)
-            ->with('success', 'Surat berhasil diupload.');
-    }
-
-
-    public function deleteUpload($id)
-    {
-        $surat = RiwayatSurat::with('detailSurat')->findOrFail($id);
-        if ($surat->detailSurat) {
-            if (Storage::disk('public')->exists($surat->detailSurat->file_path)) {
-                Storage::disk('public')->delete($surat->detailSurat->file_path);
-            }
-            $surat->detailSurat()->delete();
-        }
-        $surat->update([
-            'status' => 'Belum Terupload',
-        ]);
-        return redirect()
-            ->route('surat.upload.show', $surat->id)
-            ->with('success', 'File berhasil dihapus.');
-    }
-
-    public function getNextSequence(Request $request)
-    {
-        $tanggal = $request->tanggal;
-
-        $jumlah = RiwayatSurat::whereDate('tanggal', $tanggal)->count();
-
-        return response()->json([
-            'sequence' => str_pad($jumlah + 1, 3, '0', STR_PAD_LEFT)
-        ]);
-    }
+public function showUpload($id)
+{
+    return redirect()->back();
 }
->>>>>>> cb6e0ef5e3af145322159bc0ccf2ff4addafcefe
+
+public function storeUpload(Request $request, $id)
+{
+    return response()->json(['message' => 'Not implemented'], 501);
+}
+
+public function deleteUpload($id)
+{
+    return response()->json(['message' => 'Not implemented'], 501);
+}
+
+public function getNextSequence(Request $request)
+{
+    $tanggal = $request->input('tanggal', now()->toDateString());
+    $count = RiwayatSurat::whereDate('tanggal', $tanggal)->count();
+    $next = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+    return response()->json(['nextSequence' => $next]);
+}
+}
