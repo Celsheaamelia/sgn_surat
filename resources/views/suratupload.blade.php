@@ -296,6 +296,32 @@
         color: var(--danger);
     }
 
+    /* Modal preview file — tetap dalam tema ledger */
+    #filePreviewModal .modal-content {
+        border: 1px solid var(--line);
+        border-radius: 0.9rem;
+        overflow: hidden;
+    }
+    #filePreviewModal .modal-header {
+        background: var(--paper);
+        border-bottom: 1px solid var(--line);
+        padding: 1.1rem 1.5rem;
+    }
+    #filePreviewModal .modal-title {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: var(--ink);
+    }
+    #filePreviewModal .modal-body {
+        background: #f0f0f0;
+    }
+    #filePreviewModal .modal-footer {
+        background: var(--paper);
+        border-top: 1px solid var(--line);
+        padding: 0.9rem 1.5rem;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         * { transition: none !important; }
     }
@@ -311,11 +337,9 @@
                 <strong>Nama File:</strong>
                 {{ $surat->detailSurat->file_name }}
             </p>
-            <a href="{{ asset('storage/'.$surat->detailSurat->file_path) }}"
-            target="_blank"
-            class="btn btn-success">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#filePreviewModal">
                 Lihat File
-            </a>
+            </button>
         </div>
         @endif
 
@@ -407,12 +431,10 @@
 
                                 <div class="d-flex gap-2">
 
-                                    <a href="{{ Storage::url($surat->detailSurat->file_path) }}"
-                                    target="_blank"
-                                    class="btn btn-outline-primary btn-sm">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#filePreviewModal">
                                         <i class="fa-solid fa-eye"></i>
                                         Lihat
-                                    </a>
+                                    </button>
 
                                     <form action="{{ route('surat.upload.delete', $surat->id) }}"
                                         method="POST"
@@ -515,6 +537,43 @@
     </div>
 </div>
 
+{{-- ==========================================================================
+     Modal preview file — muncul sebagai popup di tengah layar, bukan tab baru
+     ========================================================================== --}}
+@if($surat->detailSurat)
+    @php
+        $fileUrl = Storage::url($surat->detailSurat->file_path);
+        $isPdfFile = str_ends_with(strtolower($surat->detailSurat->file_path), '.pdf');
+    @endphp
+    <div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filePreviewModalLabel">
+                        {{ $surat->detailSurat->file_name }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" style="height: 75vh;">
+                    @if($isPdfFile)
+                        <iframe src="{{ $fileUrl }}" style="width:100%; height:100%; border:0;"></iframe>
+                    @else
+                        <div class="d-flex align-items-center justify-content-center h-100 p-3">
+                            <img src="{{ $fileUrl }}" alt="{{ $surat->detailSurat->file_name }}" style="max-width:100%; max-height:100%; object-fit:contain;">
+                        </div>
+                    @endif
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ $fileUrl }}" target="_blank" class="ledger-cta">
+                        Buka di tab baru
+                    </a>
+                    <button type="button" class="btn ledger-btn-ghost" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 <script>
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
@@ -580,3 +639,4 @@
 </script>
 
 @endsection
+ 

@@ -735,4 +735,49 @@
 </script>
 @endpush
 
+@if (session('success'))
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border: 1px solid var(--line); border-radius: 0.9rem;">
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success);"></i>
+                    </div>
+                    <h5 class="ledger-title mb-2" style="font-size: 1.2rem;">Surat Berhasil Disimpan</h5>
+                    <p class="ledger-subtitle mb-1">{{ session('success') }}</p>
+                    @if (session('created_nomor'))
+                        <p class="mb-0" style="font-family: var(--font-mono); font-weight: 600; color: var(--brass-dark); word-break: break-all;">
+                            {{ session('created_nomor') }}
+                        </p>
+                    @endif
+                </div>
+                <div class="modal-footer justify-content-center border-0 pt-0 pb-4">
+                    <button type="button" class="btn ledger-btn-brass" data-bs-dismiss="modal">
+                        Buat Surat Lagi
+                    </button>
+                    <a href="{{ route('riwayatsurat') }}" class="btn ledger-btn-ghost">
+                        Lihat Riwayat Surat
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const successModalEl = document.getElementById('successModal');
+            if (successModalEl) {
+                const successModal = new bootstrap.Modal(successModalEl);
+                successModal.show();
+
+                // Reset form setelah modal ditutup, biar siap buat surat berikutnya
+                successModalEl.addEventListener('hidden.bs.modal', function () {
+                    const form = document.getElementById('suratForm');
+                    if (form) form.reset();
+                });
+            }
+        });
+    </script>
+@endif
+
 @endsection

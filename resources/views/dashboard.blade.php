@@ -75,7 +75,6 @@
         letter-spacing: .05em;
     }
 
-    /* Angka statistik pakai font body (Inter), bukan serif — biar nggak melengkung */
     .stat-value {
         font-family: var(--font-body);
         color: var(--ink);
@@ -128,7 +127,6 @@
         padding: 1.25rem 1.5rem;
     }
 
-    /* Judul panel pakai font body juga, bukan serif */
     .panel-title {
         font-family: var(--font-body);
         font-weight: 600;
@@ -137,7 +135,15 @@
         margin: 0;
     }
 
-    .filter-pill {
+    /* Date range filter */
+    .date-range-filter {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .date-range-filter input[type="date"] {
         font-family: var(--font-mono);
         border-radius: 999px;
         border: 1px solid #e6e8f0;
@@ -145,14 +151,50 @@
         font-size: .8rem;
         font-weight: 600;
         color: var(--ink);
-        padding: .45rem 1.1rem;
-        width: auto;
+        padding: .45rem 1rem;
         box-shadow: none;
     }
 
-    .filter-pill:focus {
+    .date-range-filter input[type="date"]:focus {
+        outline: none;
         border-color: #0f6b45;
         box-shadow: 0 0 0 3px rgba(15,107,69,.12);
+    }
+
+    .date-range-filter .date-sep {
+        font-family: var(--font-mono);
+        color: var(--muted);
+        font-size: .78rem;
+    }
+
+    .btn-terapkan {
+        font-family: var(--font-mono);
+        border-radius: 999px;
+        border: none;
+        background: #0f6b45;
+        color: #fff;
+        font-size: .8rem;
+        font-weight: 600;
+        padding: .45rem 1.1rem;
+        transition: background .15s ease;
+    }
+
+    .btn-terapkan:hover {
+        background: #0c5636;
+        color: #fff;
+    }
+
+    .btn-terapkan:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+    .date-range-error {
+        font-family: var(--font-mono);
+        color: #e0554d;
+        font-size: .76rem;
+        margin-top: .5rem;
+        display: none;
     }
 
     .panel-card .card-body { padding: 1.5rem; }
@@ -185,6 +227,7 @@
         font-size: .86rem;
         letter-spacing: 0.01em;
         display: block;
+        word-break: break-all;
     }
 
     .riwayat-date {
@@ -212,9 +255,17 @@
 
     .riwayat-footer a:hover { gap: .55rem; }
 
+    .riwayat-empty {
+        padding: 2rem 1.5rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: .88rem;
+    }
+
     @media (max-width: 767px) {
         .content-wrap { padding: 1.25rem .9rem; }
         .stat-value { font-size: 1.7rem; }
+        .date-range-filter { width: 100%; }
     }
 </style>
 
@@ -234,9 +285,10 @@
                 <div class="card-body d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Total Nomor Surat</div>
-                        <div class="stat-value">254</div>
-                        <div class="stat-trend up">
-                            <i class="bi bi-arrow-up-short"></i> 12% bulan ini
+                        <div class="stat-value">{{ $totalSurat }}</div>
+                        <div class="stat-trend {{ $trendPersen >= 0 ? 'up' : 'warn' }}">
+                            <i class="bi {{ $trendPersen >= 0 ? 'bi-arrow-up-short' : 'bi-arrow-down-short' }}"></i>
+                            {{ abs($trendPersen) }}% bulan ini
                         </div>
                     </div>
                     <div class="icon-orb blue">
@@ -251,7 +303,7 @@
                 <div class="card-body d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Surat Hari Ini</div>
-                        <div class="stat-value">8</div>
+                        <div class="stat-value">{{ $suratHariIni }}</div>
                         <div class="stat-trend up">
                             <i class="bi bi-arrow-up-short"></i> Aktif
                         </div>
@@ -268,9 +320,9 @@
                 <div class="card-body d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Sudah Upload</div>
-                        <div class="stat-value">180</div>
+                        <div class="stat-value">{{ $sudahUpload }}</div>
                         <div class="stat-trend up">
-                            <i class="bi bi-check2-circle"></i> 70.8%
+                            <i class="bi bi-check2-circle"></i> {{ $persenUpload }}%
                         </div>
                     </div>
                     <div class="icon-orb cyan">
@@ -285,7 +337,7 @@
                 <div class="card-body d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Belum Upload</div>
-                        <div class="stat-value">12</div>
+                        <div class="stat-value">{{ $belumUpload }}</div>
                         <div class="stat-trend warn">
                             <i class="bi bi-exclamation-circle"></i> Perlu tindak lanjut
                         </div>
@@ -306,17 +358,19 @@
         <div class="col-lg-8">
             <div class="card panel-card h-100">
 
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="panel-title">Grafik Penggunaan Nomor Surat</h5>
 
-                    <select class="form-select filter-pill" id="filterChart">
-                        <option value="7">7 Hari</option>
-                        <option value="30">1 Bulan</option>
-                        <option value="365">1 Tahun</option>
-                    </select>
+                    <div class="date-range-filter">
+                        <input type="date" id="startDate" value="{{ $defaultStart->toDateString() }}" max="{{ now()->toDateString() }}">
+                        <span class="date-sep">s/d</span>
+                        <input type="date" id="endDate" value="{{ $defaultEnd->toDateString() }}" max="{{ now()->toDateString() }}">
+                        <button type="button" class="btn-terapkan" id="applyDateRange">Terapkan</button>
+                    </div>
                 </div>
 
                 <div class="card-body">
+                    <div class="date-range-error" id="dateRangeError"></div>
                     <canvas id="suratChart" height="300"></canvas>
                 </div>
 
@@ -333,40 +387,22 @@
 
                 <div class="card-body p-0">
 
-                    <div class="riwayat-item">
-                        <span class="riwayat-dot"></span>
-                        <div>
-                            <span class="riwayat-code">001/SP/HRD/VII/2026</span>
-                            <span class="riwayat-date">07 Juli 2026</span>
+                    @forelse ($riwayatTerbaru as $surat)
+                        <div class="riwayat-item">
+                            <span class="riwayat-dot"></span>
+                            <div>
+                                <span class="riwayat-code">{{ $surat->nomor_surat }}</span>
+                                <span class="riwayat-date">
+                                    {{ \Carbon\Carbon::parse($surat->tanggal)->translatedFormat('d F Y') }}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="riwayat-item">
-                        <span class="riwayat-dot"></span>
-                        <div>
-                            <span class="riwayat-code">002/SP/KEU/VII/2026</span>
-                            <span class="riwayat-date">07 Juli 2026</span>
-                        </div>
-                    </div>
-
-                    <div class="riwayat-item">
-                        <span class="riwayat-dot"></span>
-                        <div>
-                            <span class="riwayat-code">003/SP/PROD/VII/2026</span>
-                            <span class="riwayat-date">06 Juli 2026</span>
-                        </div>
-                    </div>
-
-                    <div class="riwayat-item">
-                        <span class="riwayat-dot"></span>
-                        <div>
-                            <span class="riwayat-code">004/SP/GA/VII/2026</span>
-                            <span class="riwayat-date">05 Juli 2026</span>
-                        </div>
-                    </div>
+                    @empty
+                        <div class="riwayat-empty">Belum ada surat yang tercatat.</div>
+                    @endforelse
 
                     <div class="riwayat-footer">
-                        <a href="#">Lihat Semua <i class="bi bi-arrow-right"></i></a>
+                        <a href="{{ route('riwayatsurat') }}">Lihat Semua <i class="bi bi-arrow-right"></i></a>
                     </div>
 
                 </div>
@@ -382,24 +418,14 @@
 
 <script>
 
-const dataChart = {
-    7: {
-        labels: ['Sen','Sel','Rab','Kam','Jum','Sab','Min'],
-        data: [5,8,4,10,7,15,12]
-    },
-    30: {
-        labels: ['Minggu 1','Minggu 2','Minggu 3','Minggu 4'],
-        data: [30,45,38,52]
-    },
-    365: {
-        labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'],
-        data: [12,20,18,30,25,22,35,28,26,31,29,40]
-    }
-};
+// Data awal (default 7 hari terakhir) langsung dari controller,
+// biar grafik kebuka nggak nunggu request AJAX dulu.
+const initialChartData = @json($chartData);
+const chartDataUrl = "{{ route('dashboard.chart-data') }}";
 
 const ctx = document.getElementById('suratChart');
 
-/* Warna grafik: hijau tua, samain sama tema halaman lain (bukan biru lagi) */
+/* Warna grafik: hijau tua, samain sama tema halaman lain */
 const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
 gradient.addColorStop(0, 'rgba(15,107,69,.28)');
 gradient.addColorStop(1, 'rgba(15,107,69,0)');
@@ -407,10 +433,10 @@ gradient.addColorStop(1, 'rgba(15,107,69,0)');
 const chart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: dataChart[7].labels,
+        labels: initialChartData.labels,
         datasets: [{
             label: 'Nomor Surat',
-            data: dataChart[7].data,
+            data: initialChartData.data,
             borderColor: '#0f6b45',
             backgroundColor: gradient,
             fill: true,
@@ -448,7 +474,13 @@ const chart = new Chart(ctx, {
             },
             y: {
                 beginAtZero: true,
-                ticks: { color: '#8a8fa3', font: { size: 12, family: "'IBM Plex Mono', monospace" } },
+                suggestedMax: 5,
+                ticks: {
+                    color: '#8a8fa3',
+                    font: { size: 12, family: "'IBM Plex Mono', monospace" },
+                    stepSize: 1,
+                    precision: 0
+                },
                 grid: { color: '#eef0f6' },
                 border: { display: false }
             }
@@ -456,11 +488,62 @@ const chart = new Chart(ctx, {
     }
 });
 
-document.getElementById('filterChart').addEventListener('change', function () {
-    const value = this.value;
-    chart.data.labels = dataChart[value].labels;
-    chart.data.datasets[0].data = dataChart[value].data;
-    chart.update();
+// ==========================================================================
+// Filter rentang tanggal — admin pilih tanggal mulai & akhir, klik Terapkan
+// ==========================================================================
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
+const applyBtn = document.getElementById('applyDateRange');
+const errorBox = document.getElementById('dateRangeError');
+
+function showError(message) {
+    errorBox.textContent = message;
+    errorBox.style.display = 'block';
+}
+
+function clearError() {
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+}
+
+applyBtn.addEventListener('click', () => {
+    const start = startDateInput.value;
+    const end = endDateInput.value;
+
+    clearError();
+
+    if (!start || !end) {
+        showError('Pilih tanggal mulai dan tanggal akhir dulu.');
+        return;
+    }
+
+    if (start > end) {
+        showError('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+        return;
+    }
+
+    applyBtn.disabled = true;
+    applyBtn.textContent = 'Memuat...';
+
+    fetch(`${chartDataUrl}?start=${start}&end=${end}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Gagal mengambil data.');
+            return res.json();
+        })
+        .then(json => {
+            chart.data.labels = json.labels;
+            chart.data.datasets[0].data = json.data;
+            chart.update();
+        })
+        .catch(() => {
+            showError('Gagal memuat data untuk rentang tanggal ini.');
+        })
+        .finally(() => {
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Terapkan';
+        });
 });
 
 </script>

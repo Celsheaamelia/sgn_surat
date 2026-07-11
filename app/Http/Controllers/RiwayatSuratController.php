@@ -97,8 +97,9 @@ class RiwayatSuratController extends Controller
             'user_id' => Auth::id(),
         ]);
 
-        return redirect()->route('riwayatsurat')
-            ->with('success', 'Surat berhasil dibuat.');
+        return redirect()->route('tambahsurat')
+            ->with('success', 'Surat berhasil dibuat.')
+            ->with('created_nomor', $nomor);
     }
 
     public function showUpload($id)

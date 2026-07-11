@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\RiwayatSuratController;
-
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -37,9 +37,10 @@ function simpanSurat(array $data): void
     // Tampilkan form tambah surat
     Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    Route::get('/dashboard/chart-data', [DashboardController::class, 'chartRange'])
+    ->name('dashboard.chart-data');
 
     Route::get('/surat/tambah', [RiwayatSuratController::class,'create'])
         ->name('tambahsurat');
