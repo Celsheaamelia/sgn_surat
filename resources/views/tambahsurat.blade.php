@@ -588,9 +588,9 @@
 
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
-                            {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.0001) --}}
+                            {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.001) --}}
                             <p class="mb-0" id="previewNumber">
-                                ---/---/---/--------.{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
+                                ---&#8209;---&#8209;---/--------.{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
                             </p>
                         </div>
 
@@ -626,7 +626,7 @@
             </div>
         </div>
 
-        {{-- Daftar surat yang sudah dibuat --}}
+       {{-- Daftar surat yang sudah dibuat --}}
         @if (count($suratList ?? []) > 0)
             <div class="card ledger-card mt-4">
                 <div class="card-header ledger-card-header">
@@ -642,7 +642,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($suratList as $surat)
+                            @foreach ($suratList->reverse() as $surat)
                                 <tr>
                                     <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
                                     <td class="ledger-perihal">{{ $surat->perihal }}</td>
@@ -706,7 +706,7 @@
         const tanggal = formatTanggal(tanggalEl.value);
 
         document.getElementById('previewNumber').textContent =
-            `${sign}/${tujuan}/${klasifikasi}/${tanggal}.${seqText}`;
+            `${sign}-${tujuan}-${klasifikasi}/${tanggal}.${seqText}`;
         document.getElementById('previewSign').textContent = sign;
         document.getElementById('previewTujuan').textContent = tujuan;
         document.getElementById('previewKlasifikasi').textContent = klasifikasi;

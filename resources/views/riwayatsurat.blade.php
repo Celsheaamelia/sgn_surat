@@ -3,360 +3,347 @@
 @section('content')
 
 <style>
-    /* ==========================================================================
-       Riwayat Surat — Registry Ledger Theme (matches Tambah Surat)
-       Same token set / typography / card language as tambahsurat.blade.php.
-       ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
-    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+:root {
+  /* Color tokens — cool slate, distinct from tambahsurat's warm ledger green */
+  --slate-ink:      #1e2a35;
+  --slate-ink-soft: #526271;
+  --slate-paper:    #f5f7f9;
+  --slate-panel:    #eef1f5;
+  --slate-line:     #dde3e9;
+  --slate-accent:   #3a5a78;   /* steel blue — this page's primary accent */
+  --slate-accent-dark: #2a4258;
+  --slate-accent-tint: #e6edf3;
+  --slate-danger:   #b3432f;
 
-    :root {
-        /* Color tokens — identical to Tambah Surat */
-        --ink:        #1c2b23;
-        --ink-soft:   #3d4f45;
-        --ledger:     #eef3ea;
-        --ledger-line:#cdd9c8;
-        --paper:      #fbfcf9;
-        --brass:      #a9812f;
-        --brass-dark: #8a6a24;
-        --brass-tint: #f4ecd8;
-        --line:       #dfe6da;
-        --danger:     #b3432f;
-        --danger-bg:  #fdf1ee;
-        --success:    #3f6b4a;
-        --success-bg: #eef5ef;
+  /* Department tab colors — each dept gets a distinct filing-label hue */
+  --dept-hrd: #a9812f;
+  --dept-fin: #3f6b4a;
+  --dept-ops: #3a5a78;
+  --dept-it:  #6a4c93;
+  --dept-mkt: #b3432f;
 
-        --font-display: 'Fraunces', Georgia, serif;
-        --font-body: 'Inter', -apple-system, sans-serif;
-        --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-    }
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
 
-    /* ==========================================================================
-       Page base — same ledger paper canvas as Tambah Surat
-       ========================================================================== */
+/* ==========================================================================
+   Page base
+   ========================================================================== */
 
-    .ledger-page {
-        background: var(--ledger);
-        font-family: var(--font-body);
-        color: var(--ink);
-        min-height: 100vh;
-    }
+.archive-page {
+  background: var(--slate-paper);
+  font-family: var(--font-body);
+  color: var(--slate-ink);
+  min-height: 100vh;
+}
 
-    /* Breadcrumb */
-    .ledger-breadcrumb {
-        background: transparent;
-        padding: 0;
-        color: var(--ink-soft);
-        font-family: var(--font-mono);
-        font-size: 0.72rem;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-    }
-    .ledger-breadcrumb .breadcrumb-item a {
-        color: var(--ink-soft);
-        text-decoration: none;
-    }
-    .ledger-breadcrumb .breadcrumb-item.active {
-        color: var(--brass-dark);
-        font-weight: 600;
-    }
+/* Breadcrumb */
+.archive-breadcrumb {
+  background: transparent;
+  padding: 0;
+  color: var(--slate-ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.archive-breadcrumb .breadcrumb-item a {
+  color: var(--slate-ink-soft);
+  text-decoration: none;
+}
+.archive-breadcrumb .breadcrumb-item.active {
+  color: var(--slate-accent-dark);
+  font-weight: 600;
+}
 
-    /* Alert */
-    .ledger-alert-success {
-        background: var(--success-bg);
-        border: 1px solid #cfe2d4;
-        color: var(--success);
-        border-radius: 0.75rem;
-        font-size: 0.9rem;
-    }
+/* Alert */
+.archive-alert-success {
+  background: #eef5ef;
+  border: 1px solid #cfe2d4;
+  color: #3f6b4a;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+}
 
-    /* ==========================================================================
-       Cards — same surface, radius, shadow as Tambah Surat
-       ========================================================================== */
+/* ==========================================================================
+   Header card + toolbar
+   ========================================================================== */
 
-    .ledger-card {
-        background: var(--paper);
-        border: 1px solid var(--line);
-        border-radius: 0.9rem;
-        box-shadow: 0 1px 2px rgba(28,43,35,0.05), 0 1px 10px rgba(28,43,35,0.04);
-    }
+.archive-card {
+  background: #ffffff;
+  border: 1px solid var(--slate-line);
+  border-radius: 0.9rem;
+  box-shadow: 0 1px 2px rgba(30,42,53,0.05), 0 1px 10px rgba(30,42,53,0.04);
+}
 
-    .ledger-title {
-        font-family: var(--font-display);
-        font-weight: 600;
-        font-size: 1.55rem;
-        color: var(--ink);
-        letter-spacing: -0.01em;
-    }
+.archive-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.55rem;
+  color: var(--slate-ink);
+  letter-spacing: -0.01em;
+}
 
-    .ledger-subtitle {
-        color: var(--ink-soft);
-        font-size: 0.85rem;
-    }
+.archive-subtitle {
+  color: var(--slate-ink-soft);
+  font-size: 0.85rem;
+}
 
-    /* Counter badge — brass stamp pill, echoes the registrar's stamp on Tambah Surat */
-    .ledger-badge {
-        background: var(--brass-tint);
-        color: var(--brass-dark);
-        font-family: var(--font-mono);
-        font-size: 0.78rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        padding: 0.4rem 0.85rem;
-        border-radius: 999px;
-        white-space: nowrap;
-        display: inline-block;
-        border: 1px solid rgba(169,129,47,0.25);
-    }
+.counter-badge {
+  background: var(--slate-accent-tint);
+  color: var(--slate-accent-dark);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  display: inline-block;
+}
 
-    /* ==========================================================================
-       Toolbar — same input styling language as Tambah Surat's form fields
-       ========================================================================== */
+#searchInput,
+#filterDept,
+#sortOrder {
+  font-family: var(--font-body);
+  color: var(--slate-ink);
+  background-color: var(--slate-paper);
+  border-color: var(--slate-line);
+  border-radius: 0.55rem;
+}
 
-    #searchInput,
-    #filterKlasifikasi,
-    #sortOrder {
-        font-family: var(--font-body);
-        color: var(--ink);
-        background-color: var(--paper);
-        border: 1px solid var(--line);
-        border-radius: 0.55rem;
-        padding: 0.65rem 0.95rem;
-        font-size: 0.92rem;
-    }
+.input-group-text {
+  background-color: var(--slate-paper);
+  border-color: var(--slate-line);
+  color: var(--slate-ink-soft);
+  border-radius: 0.55rem 0 0 0.55rem;
+}
 
-    .ledger-input-icon {
-        background-color: var(--ledger);
-        border: 1px solid var(--line);
-        border-right: none;
-        color: var(--ink-soft);
-        border-radius: 0.55rem 0 0 0.55rem;
-    }
+.input-group #searchInput {
+  border-radius: 0 0.55rem 0.55rem 0;
+}
 
-    .input-group #searchInput {
-        border-radius: 0 0.55rem 0.55rem 0;
-    }
+#searchInput:focus,
+#filterDept:focus,
+#sortOrder:focus {
+  border-color: var(--slate-accent);
+  box-shadow: 0 0 0 3px rgba(58,90,120,0.16);
+}
 
-    #searchInput:focus,
-    #filterKlasifikasi:focus,
-    #sortOrder:focus {
-        outline: none;
-        border-color: var(--brass);
-        box-shadow: 0 0 0 3px rgba(169,129,47,0.16);
-    }
+#filterDept,
+#sortOrder {
+  cursor: pointer;
+}
 
-    #searchInput:focus-visible,
-    #filterKlasifikasi:focus-visible,
-    #sortOrder:focus-visible {
-        outline: 2px solid var(--brass-dark);
-        outline-offset: 2px;
-    }
+/* ==========================================================================
+   Archive list — index-card rows with a folder-tab strip
+   ========================================================================== */
 
-    #filterKlasifikasi,
-    #sortOrder {
-        cursor: pointer;
-    }
+#archiveCard {
+  overflow: hidden;
+}
 
-    /* ==========================================================================
-       Archive table — same ledger surface/ink language, now as a real <table>
-       ========================================================================== */
+.archive-row {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--slate-line);
+  transition: background 0.15s ease;
+}
 
-    #archiveCard {
-        overflow: hidden;
-    }
+.archive-row:first-child {
+  border-top: none;
+}
 
-    .ledger-table {
-        width: 100%;
-        margin-bottom: 0;
-        border-collapse: collapse;
-    }
+.archive-row:hover {
+  background: var(--slate-panel);
+}
 
-    .ledger-table thead th {
-        background: var(--ledger);
-        color: var(--ink-soft);
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        font-weight: 600;
-        border-bottom: none;
-        padding: 0.9rem 1.5rem;
-        white-space: nowrap;
-    }
+.archive-tab {
+  width: 6px;
+  flex-shrink: 0;
+  background: var(--slate-ink-soft);
+}
 
-    .ledger-table tbody tr {
-        border-top: 1px solid var(--ledger-line);
-        transition: background 0.15s ease;
-    }
+.archive-tab[data-dept="HRD"] { background: var(--dept-hrd); }
+.archive-tab[data-dept="FIN"] { background: var(--dept-fin); }
+.archive-tab[data-dept="OPS"] { background: var(--dept-ops); }
+.archive-tab[data-dept="IT"]  { background: var(--dept-it); }
+.archive-tab[data-dept="MKT"] { background: var(--dept-mkt); }
 
-    .ledger-table tbody tr:hover {
-        background: var(--brass-tint);
-    }
+.archive-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.75rem;
+  flex-wrap: wrap;
+}
 
-    .ledger-table tbody td {
-        padding: 1rem 1.5rem;
-        vertical-align: middle;
-        font-size: 0.9rem;
-    }
+.archive-main {
+  min-width: 0;
+}
 
-    .ledger-table .ledger-nomor {
-        color: var(--brass-dark);
-        font-family: var(--font-mono);
-        font-weight: 600;
-        font-size: 0.84rem;
-        letter-spacing: 0.02em;
-        word-break: break-all;
-    }
+.archive-nomor {
+  margin: 0 0 0.2rem 0;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+  color: var(--slate-accent-dark);
+}
 
-    .ledger-table .ledger-perihal {
-        color: var(--ink);
-    }
+.archive-perihal {
+  margin: 0;
+  font-size: 0.94rem;
+  color: var(--slate-ink);
+}
 
-    .ledger-table .ledger-tujuan,
-    .ledger-table .ledger-signatory {
-        color: var(--ink-soft);
-    }
+.archive-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-shrink: 0;
+}
 
-    .ledger-table .ledger-tanggal {
-        color: var(--ink-soft);
-        font-family: var(--font-mono);
-        font-size: 0.82rem;
-        white-space: nowrap;
-    }
+.dept-chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: var(--slate-accent-tint);
+  color: var(--slate-accent-dark);
+}
 
-    /* Status pill */
-    .ledger-status-pill {
-        font-family: var(--font-mono);
-        font-size: 0.68rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        padding: 0.32rem 0.7rem;
-        border-radius: 999px;
-        white-space: nowrap;
-        display: inline-block;
-    }
+.dept-chip[data-dept="HRD"] { background: color-mix(in srgb, var(--dept-hrd) 16%, white); color: var(--dept-hrd); }
+.dept-chip[data-dept="FIN"] { background: color-mix(in srgb, var(--dept-fin) 16%, white); color: var(--dept-fin); }
+.dept-chip[data-dept="OPS"] { background: color-mix(in srgb, var(--dept-ops) 16%, white); color: var(--dept-ops); }
+.dept-chip[data-dept="IT"]  { background: color-mix(in srgb, var(--dept-it) 16%, white); color: var(--dept-it); }
+.dept-chip[data-dept="MKT"] { background: color-mix(in srgb, var(--dept-mkt) 16%, white); color: var(--dept-mkt); }
 
-    .ledger-status-pill.is-uploaded {
-        background: var(--success-bg);
-        color: var(--success);
-        border: 1px solid #cfe2d4;
-    }
+.archive-date {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--slate-ink-soft);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 
-    .ledger-status-pill.is-pending {
-        background: var(--brass-tint);
-        color: var(--brass-dark);
-        border: 1px solid rgba(169,129,47,0.25);
-    }
+/* ==========================================================================
+   Empty states
+   ========================================================================== */
 
-    .ledger-btn-detail {
-        background: transparent;
-        border: 1px solid var(--ink);
-        color: var(--ink-soft);
-        font-family: var(--font-body);
-        font-weight: 600;
-        font-size: 0.8rem;
-        padding: 0.4rem 0.9rem;
-        border-radius: 0.5rem;
-        white-space: nowrap;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        transition: background 0.15s ease, color 0.15s ease;
-    }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3.5rem 2rem;
+  color: var(--slate-ink-soft);
+}
 
-    .ledger-btn-detail:hover {
-        background: var(--ink);
-        color: #fff;
-    }
+.empty-state i {
+  font-size: 2rem;
+  color: var(--slate-line);
+  margin-bottom: 1rem;
+}
 
-    /* ==========================================================================
-       Empty states — same brass/dashed accent as Tambah Surat's stamp box
-       ========================================================================== */
+.empty-state p {
+  margin: 0 0 1rem 0;
+  font-size: 0.92rem;
+}
 
-    .ledger-empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 3.5rem 2rem;
-        color: var(--ink-soft);
-    }
+.empty-cta {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--slate-accent-dark);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--slate-accent-dark);
+  padding-bottom: 2px;
+}
 
-    .ledger-empty i {
-        font-size: 2rem;
-        color: var(--ledger-line);
-        margin-bottom: 1rem;
-    }
+.empty-cta:hover {
+  color: var(--slate-accent);
+  border-color: var(--slate-accent);
+}
 
-    .ledger-empty p {
-        margin: 0 0 1rem 0;
-        font-size: 0.92rem;
-    }
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
 
-    .ledger-cta {
-        font-family: var(--font-mono);
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: var(--brass-dark);
-        text-decoration: none;
-        border-bottom: 1px dashed var(--brass-dark);
-        padding-bottom: 2px;
-    }
+@media (max-width: 640px) {
+  .archive-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
 
-    .ledger-cta:hover {
-        color: var(--brass);
-        border-color: var(--brass);
-    }
+  .archive-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
 
-    /* ==========================================================================
-       Responsive — let the table scroll horizontally on small screens
-       instead of squeezing/breaking columns
-       ========================================================================== */
-
-    .ledger-table-scroll {
-        overflow-x: auto;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        * {
-            transition: none !important;
-        }
-    }
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
 </style>
 
-<div class="ledger-page" id="riwayatPage">
+<div class="archive-page" id="riwayatPage">
     <div class="container-fluid py-4 py-md-5">
+
+        {{-- Breadcrumb --}}
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb archive-breadcrumb mb-4">
+                <li class="breadcrumb-item">
+                    <a href="{{ route('dashboard') }}"><i class="fa-solid fa-house me-1"></i>Dashboard</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ Route::has('surat.index') ? route('surat.index') : '#' }}">Letter Management</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Riwayat Surat</li>
+            </ol>
+        </nav>
 
         {{-- Alert sukses (jika ada aksi hapus dll) --}}
         @if (session('success'))
-            <div class="alert ledger-alert-success d-flex align-items-center gap-2" role="alert">
+            <div class="alert archive-alert-success d-flex align-items-center gap-2" role="alert">
                 <i class="fa-solid fa-circle-check"></i>
                 <div>{{ session('success') }}</div>
             </div>
         @endif
 
         {{-- Header + Toolbar --}}
-        <div class="card ledger-card mb-4">
+        <div class="card archive-card mb-4">
             <div class="card-body">
                 <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
                     <div>
-                        <h2 class="ledger-title mb-1">Riwayat Surat</h2>
+                        <h2 class="archive-title mb-1">Riwayat Surat</h2>
+                        <p class="archive-subtitle mb-0">Arsip seluruh nomor surat yang pernah diterbitkan.</p>
                     </div>
                     <div id="totalCounter">
-                        <span class="ledger-badge">
+                        <span class="counter-badge">
                             <span id="totalCount">{{ count($suratList ?? []) }}</span> surat tercatat
                         </span>
                     </div>
                 </div>
 
-                {{-- Toolbar: search + filter klasifikasi (sesuai tabel klasifikasi_surat) + sort --}}
+                {{-- Toolbar: search + filter --}}
                 <div class="row g-3 mt-3">
                     <div class="col-md-6">
                         <div class="input-group">
-                            <span class="input-group-text ledger-input-icon">
+                            <span class="input-group-text">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </span>
                             <input
@@ -368,11 +355,13 @@
                     </div>
 
                     <div class="col-md-3">
-                        <select id="filterKlasifikasi" class="form-select">
-                            <option value="">Semua Klasifikasi</option>
-                            @foreach ($klasifikasiList ?? [] as $klasifikasi)
-                                <option value="{{ $klasifikasi->kode }}">{{ $klasifikasi->kode }} — {{ $klasifikasi->jenis_surat }}</option>
-                            @endforeach
+                        <select id="filterDept" class="form-select">
+                            <option value="">Semua Departemen</option>
+                            <option value="HRD">HRD</option>
+                            <option value="FIN">Finance</option>
+                            <option value="OPS">Operasional</option>
+                            <option value="IT">IT</option>
+                            <option value="MKT">Marketing</option>
                         </select>
                     </div>
 
@@ -386,65 +375,45 @@
             </div>
         </div>
 
-        {{-- Archive table --}}
-        <div class="card ledger-card" id="archiveCard">
+        {{-- Archive list --}}
+        <div class="card archive-card" id="archiveCard">
             @if (count($suratList ?? []) > 0)
-                <div class="ledger-table-scroll">
-                    <table class="ledger-table">
-                        <thead>
-                            <tr>
-                                <th>Nomor Surat</th>
-                                <th>Perihal</th>
-                                <th>Tujuan</th>
-                                <th>Penandatangan</th>
-                                <th>Tanggal Dibuat</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="archiveList">
-                            @foreach ($suratList as $surat)
-                                @php
-                                    $isUploaded = ($surat->status ?? 'Belum Terupload') === 'Terupload';
-                                @endphp
-                                <tr
-                                    data-perihal="{{ strtolower($surat->perihal) }}"
-                                    data-nomor="{{ strtolower($surat->nomor_surat) }}"
-                                    data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
-                                    data-tanggal="{{ $surat->tanggal }}">
-                                    <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
-                                    <td class="ledger-perihal">{{ $surat->perihal }}</td>
-                                    <td class="ledger-tujuan">{{ $surat->tujuanSurat->nama_tujuan ?? '-' }}</td>
-                                    <td class="ledger-signatory">{{ $surat->penandatangan->jabatan ?? '-' }}</td>
-                                    <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
-                                    <td>
-                                        <span class="ledger-status-pill {{ $isUploaded ? 'is-uploaded' : 'is-pending' }}">
-                                            {{ $surat->status ?? 'Belum Terupload' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('surat.show', $surat->id) }}" class="ledger-btn-detail">
-                                            <i class="fa-regular fa-eye"></i>
-                                            Upload
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                <div id="archiveList">
+                <div id="archiveList">
+                    @foreach ($suratList->reverse() as $surat)
+                        <div class="archive-row" data-perihal="{{ strtolower($surat->perihal) }}" data-nomor="{{ strtolower($surat->nomor_surat) }}" data-dept="{{ $surat->departemen ?? '' }}" data-tanggal="{{ $surat->tanggal }}">
+                            <div class="archive-tab" data-dept="{{ $surat->departemen ?? '' }}"></div>
+                            <div class="archive-body">
+                                <div class="archive-main">
+                                    <p class="archive-nomor">{{ $surat->nomor_surat }}</p>
+                                    <p class="archive-perihal">{{ $surat->perihal }}</p>
+                                </div>
+                                <div class="archive-meta">
+                                    @if (!empty($surat->departemen))
+                                        <span class="dept-chip" data-dept="{{ $surat->departemen }}">{{ $surat->departemen }}</span>
+                                    @endif
+                                    <span class="archive-date">
+                                        <i class="fa-regular fa-calendar"></i>
+                                        {{ $surat->tanggal }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
                 </div>
 
                 <div id="emptySearchState" class="d-none">
-                    <div class="ledger-empty">
+                    <div class="empty-state">
                         <i class="fa-solid fa-folder-open"></i>
                         <p>Tidak ada surat yang cocok dengan pencarian.</p>
                     </div>
                 </div>
             @else
-                <div class="ledger-empty">
+                <div class="empty-state">
                     <i class="fa-solid fa-box-archive"></i>
                     <p>Belum ada surat yang tercatat.</p>
-                    <a href="{{ route('tambahsurat') }}" class="ledger-cta">Buat surat pertama</a>
+                    <a href="{{ route('tambahsurat') }}" class="empty-cta">Buat surat pertama</a>
                 </div>
             @endif
         </div>
@@ -453,7 +422,7 @@
 
 <script>
     const searchInput = document.getElementById('searchInput');
-    const filterKlasifikasi = document.getElementById('filterKlasifikasi');
+    const filterDept = document.getElementById('filterDept');
     const sortOrder = document.getElementById('sortOrder');
     const archiveList = document.getElementById('archiveList');
     const emptySearchState = document.getElementById('emptySearchState');
@@ -463,8 +432,8 @@
         if (!archiveList) return;
 
         const query = searchInput.value.trim().toLowerCase();
-        const klasifikasi = filterKlasifikasi.value;
-        const rows = Array.from(archiveList.querySelectorAll('tr'));
+        const dept = filterDept.value;
+        const rows = Array.from(archiveList.querySelectorAll('.archive-row'));
 
         let visibleCount = 0;
 
@@ -472,8 +441,8 @@
             const matchQuery = !query ||
                 row.dataset.nomor.includes(query) ||
                 row.dataset.perihal.includes(query);
-            const matchKlasifikasi = !klasifikasi || row.dataset.klasifikasi === klasifikasi;
-            const visible = matchQuery && matchKlasifikasi;
+            const matchDept = !dept || row.dataset.dept === dept;
+            const visible = matchQuery && matchDept;
 
             row.classList.toggle('d-none', !visible);
             if (visible) visibleCount++;
@@ -489,7 +458,7 @@
     function applySort() {
         if (!archiveList) return;
 
-        const rows = Array.from(archiveList.querySelectorAll('tr'));
+        const rows = Array.from(archiveList.querySelectorAll('.archive-row'));
         const direction = sortOrder.value;
 
         rows.sort((a, b) => {
@@ -503,7 +472,7 @@
 
     if (searchInput) {
         searchInput.addEventListener('input', applyFilters);
-        filterKlasifikasi.addEventListener('change', applyFilters);
+        filterDept.addEventListener('change', applyFilters);
         sortOrder.addEventListener('change', () => {
             applySort();
             applyFilters();
