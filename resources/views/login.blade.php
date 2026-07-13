@@ -160,7 +160,7 @@
                 @endif
 
                 {{-- Form Login --}}
-                <form method="POST" action="{{ route('login') }}">
+                <form action="{{ url('/login') }}" method="POST">
                     @csrf
 
                     {{-- Username --}}
