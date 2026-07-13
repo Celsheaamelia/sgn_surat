@@ -13,7 +13,7 @@ class TujuanSuratSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('tujuan_surats')->insert([
+        DB::table('tujuan_surats')->upsert([
             [
                 'kode' => 'BD00',
                 'nama_tujuan' => 'SELURUH DIREKSI',
@@ -610,6 +610,87 @@ class TujuanSuratSeeder extends Seeder
                 'nama_tujuan' => 'KEBUN TAKALAR',
             ],
 
-        ]);
+            [
+                'kode' => 'HDNUS',
+                'nama_tujuan' => 'PT Perkebunan Nusantara III (Persero)',
+            ],
+            [
+                'kode' => 'PN01',
+                'nama_tujuan' => 'PT Perkebunan Nusantara I',
+            ],
+            [
+                'kode' => 'PN04',
+                'nama_tujuan' => 'PT Perkebunan Nusantara IV',
+            ],
+            [
+                'kode' => 'IGG',
+                'nama_tujuan' => 'PT Industri Gula Glenmore',
+            ],
+            [
+                'kode' => 'BCN',
+                'nama_tujuan' => 'PT Buma Cima Nusantara',
+            ],
+            [
+                'kode' => 'LPP',
+                'nama_tujuan' => 'Lembaga Pendidikan Perkebunan',
+            ],
+            [
+                'kode' => 'P3GI',
+                'nama_tujuan' => 'Pusat Penelitian Perkebunan Gula Indonesia',
+            ],
+            [
+                'kode' => 'KPBN',
+                'nama_tujuan' => 'PT Kharisma Pemasaran Bersama Nusantara',
+            ],
+            [
+                'kode' => 'DAPEB',
+                'nama_tujuan' => 'Dana Pensiun Perkebunan',
+            ],
+            [
+                'kode' => 'KBUMN',
+                'nama_tujuan' => 'Kementerian Badan Usaha Milik Negara',
+            ],
+            [
+                'kode' => 'DEKOM',
+                'nama_tujuan' => 'Dewan Komisaris',
+            ],
+            [
+                'kode' => 'ORKOM',
+                'nama_tujuan' => 'Organ Dewan Komisaris',
+            ],
+            [
+                'kode' => 'BANEG',
+                'nama_tujuan' => 'Bank BUMN',
+            ],
+            [
+                'kode' => 'BASWA',
+                'nama_tujuan' => 'Bank Swasta',
+            ],
+            [
+                'kode' => 'INMIL',
+                'nama_tujuan' => 'Instansi Militer',
+            ],
+            [
+                'kode' => 'INSIP',
+                'nama_tujuan' => 'Instansi Sipil',
+            ],
+            [
+                'kode' => 'RUPA',
+                'nama_tujuan' => 'Perseorangan, umum, dan lain pihak sebagainya',
+            ],
+            [
+                'kode' => 'PESWA',
+                'nama_tujuan' => 'Perusahaan umum/swasta, dan badan hukum lainnya',
+            ],
+            [
+                'kode' => 'PERSE',
+                'nama_tujuan' => 'Perseorangan internal',
+            ],
+
+                ],
+        ['kode'],
+        ['nama_tujuan']
+    );
+
     }
 }

@@ -163,6 +163,22 @@
         letter-spacing: 0.08em;
     }
 
+    /* Input readonly (mis. Nomor Urut) — keliatan abu-abu kayak disabled,
+       biar jelas nggak bisa diklik/diedit, dan nggak nyala emas pas fokus */
+    .ledger-form .form-control[readonly] {
+        background-color: var(--ledger);
+        color: var(--ink-soft);
+        border-color: var(--ledger-line);
+        font-family: var(--font-mono);
+        letter-spacing: 0.08em;
+        cursor: not-allowed;
+    }
+
+    .ledger-form .form-control[readonly]:focus {
+        border-color: var(--ledger-line);
+        box-shadow: none;
+    }
+
     .ledger-form .form-control::placeholder {
         color: #a3ada2;
     }
@@ -550,16 +566,16 @@
                                 </div>
                             </div>
 
-                            {{-- Nomor urut (readonly, otomatis dari server) — 4 digit --}}
+                            {{-- Nomor urut (readonly, otomatis dari server) — 3 digit --}}
                             <div class="mb-4">
                                 <label class="form-label">Nomor Urut</label>
                                 <input
-                                    type="text"
                                     id="nomorUrut"
+                                    type="text"
                                     value="{{ str_pad($nextSequence,3,'0',STR_PAD_LEFT) }}"
-                                    disabled
-                                    class="form-control">
-                                <div class="ledger-help">Nomor urut ini otomatis, berdasarkan surat terakhir yang dibuat.</div>
+                                    class="form-control"
+                                    readonly>
+                                <div class="ledger-help">Nomor urut ini otomatis, berdasarkan surat terakhir yang dibuat di tanggal yang dipilih.</div>
                             </div>
 
                             <div class="d-flex align-items-center justify-content-end gap-3">
@@ -589,10 +605,12 @@
 
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Generated Number</p>
-                            {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.001) --}}
+                            {{-- Format: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (e.g. SG26-BD05-SKP/20260710.0001) --}}
                             <p class="mb-0" id="previewNumber">
-                                ---&#8209;---&#8209;---/--------.{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
+                                ---/---/---/--------.{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
                             </p>
+                            {{-- placeholder di atas otomatis ke-replace JS jadi format:
+                                 SIGN-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ (mis. SG26-BD05-SKP/20260710.004) --}}
                         </div>
 
                         <div class="d-flex justify-content-between mb-2">
@@ -627,7 +645,7 @@
             </div>
         </div>
 
-       {{-- Daftar surat yang sudah dibuat --}}
+        {{-- Daftar surat yang sudah dibuat --}}
         @if (count($suratList ?? []) > 0)
             <div class="card ledger-card mt-4">
                 <div class="card-header ledger-card-header">
@@ -643,7 +661,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($suratList->reverse() as $surat)
+                            @foreach ($suratList as $surat)
                                 <tr>
                                     <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
                                     <td class="ledger-perihal">{{ $surat->perihal }}</td>
@@ -661,81 +679,127 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
 <script>
-    async function loadSequence() {
-        if (!tanggalEl.value) return;
-        const response = await fetch(
-            `/surat/next-sequence?tanggal=${tanggalEl.value}`
-        );
-        const data = await response.json();
-        seqText = data.sequence;
-        // update input Nomor Urut
-        document.getElementById('nomorUrut').value = seqText;
-        // update preview
-        updatePreview();
-    }
+document.addEventListener("DOMContentLoaded", function () {
 
-    // Bikin dropdown Kode Tujuan & Klasifikasi jadi bisa dicari
-    const tujuanChoices = new Choices('#kode_tujuan', {
+    // ===========================
+    // Choices Search Dropdown
+    // ===========================
+    new Choices('#kode_tujuan', {
         searchEnabled: true,
-        searchPlaceholderValue: 'Cari kode tujuan...',
         itemSelectText: '',
         shouldSort: false,
-        placeholder: true,
-        placeholderValue: 'Pilih Kode Tujuan',
     });
 
-    const klasifikasiChoices = new Choices('#klasifikasi', {
+    new Choices('#klasifikasi', {
         searchEnabled: true,
-        searchPlaceholderValue: 'Cari klasifikasi...',
         itemSelectText: '',
         shouldSort: false,
-        placeholder: true,
-        placeholderValue: 'Pilih Klasifikasi Surat',
     });
 
+    // ===========================
+    // Element
+    // ===========================
     const signEl = document.getElementById('signatory');
     const tujuanEl = document.getElementById('kode_tujuan');
     const klasifikasiEl = document.getElementById('klasifikasi');
     const tanggalEl = document.getElementById('tanggal');
-    let seqText = "001";
 
-    // "2026-07-10" -> "20260710"
-    function formatTanggal(isoDate) {
-        return isoDate ? isoDate.replaceAll('-', '') : '--------';
+    const nomorUrut = document.getElementById('nomorUrut');
+    const previewNumber = document.getElementById('previewNumber');
+
+    let seqText = "{{ str_pad($nextSequence,3,'0',STR_PAD_LEFT) }}";
+
+    // ===========================
+    // Helper
+    // ===========================
+
+    function selectedKode(select){
+        if(select.selectedIndex==-1) return "-";
+
+        return select.options[select.selectedIndex].dataset.kode ?? "-";
     }
 
-    // Ambil kode singkat dari atribut data-kode option yang dipilih (fallback ke '-')
-    function selectedKode(selectEl) {
-        const opt = selectEl.options[selectEl.selectedIndex];
-        return opt && opt.dataset.kode ? opt.dataset.kode : '-';
+    function formatTanggal(tanggal){
+
+        if(!tanggal) return "--------";
+
+        return tanggal.replaceAll("-","");
     }
 
-    // Format final: SIGNATORY-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ
-    // Contoh: SG26-BD05-SKP/20260710.0001
-    function updatePreview() {
-        const sign = selectedKode(signEl);
-        const tujuan = selectedKode(tujuanEl);
-        const klasifikasi = selectedKode(klasifikasiEl);
-        const tanggal = formatTanggal(tanggalEl.value);
+    // ===========================
+    // Preview
+    // ===========================
 
-        document.getElementById('previewNumber').textContent =
-            `${sign}-${tujuan}-${klasifikasi}/${tanggal}.${seqText}`;
-        document.getElementById('previewSign').textContent = sign;
-        document.getElementById('previewTujuan').textContent = tujuan;
-        document.getElementById('previewKlasifikasi').textContent = klasifikasi;
-        document.getElementById('previewTanggal').textContent = tanggalEl.value || '-';
+    function updatePreview(){
+
+        let sign = selectedKode(signEl);
+        let tujuan = selectedKode(tujuanEl);
+        let klasifikasi = selectedKode(klasifikasiEl);
+
+        previewNumber.innerHTML =
+            `${sign}-${tujuan}-${klasifikasi}/${formatTanggal(tanggalEl.value)}.${seqText}`;
+
+        document.getElementById("previewSign").innerHTML = sign;
+        document.getElementById("previewTujuan").innerHTML = tujuan;
+        document.getElementById("previewKlasifikasi").innerHTML = klasifikasi;
+        document.getElementById("previewTanggal").innerHTML = tanggalEl.value;
     }
 
-    signEl.addEventListener('change', updatePreview);
-    tujuanEl.addEventListener('change', updatePreview);
-    klasifikasiEl.addEventListener('change', updatePreview);
-    tanggalEl.addEventListener('change', loadSequence);
+    // ===========================
+    // Ambil nomor urut terbaru
+    // ===========================
+
+    async function loadSequence(){
+
+        if(!tanggalEl.value) return;
+
+        try{
+
+            let response = await fetch(
+                `{{ route('surat.next-sequence') }}?tanggal=${tanggalEl.value}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil nomor urut (HTTP ' + response.status + ')');
+            }
+
+            let data = await response.json();
+
+            seqText = data.sequence;
+
+            nomorUrut.value = seqText;
+
+        }catch(err){
+
+            console.log(err);
+
+        }finally{
+            updatePreview();
+
+        }
+
+    }
+
+    // ===========================
+    // Event
+    // ===========================
+
+    signEl.addEventListener("change",updatePreview);
+    tujuanEl.addEventListener("change",updatePreview);
+    klasifikasiEl.addEventListener("change",updatePreview);
+
+    tanggalEl.addEventListener("change",loadSequence);
     loadSequence();
+
+});
 </script>
 @endpush
-
-<<<<<<< HEAD
+{{-- ==========================================================================
+     Modal sukses — muncul setelah surat berhasil disimpan,
+     tanpa pindah ke halaman Riwayat Surat
+     ========================================================================== --}}
 @if (session('success'))
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -782,6 +846,3 @@
 @endif
 
 @endsection
-=======
-@endsection
->>>>>>> b911605fc3e5bb1ac9b2c7e034508cf072cd7125

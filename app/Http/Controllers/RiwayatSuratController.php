@@ -61,45 +61,45 @@ class RiwayatSuratController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'perihal' => 'required',
-            'signatory' => 'required',
-            'kode_tujuan' => 'required',
-            'klasifikasi' => 'required',
-            'tanggal' => 'required|date',
-        ]);
+{
+    $request->validate([
+        'perihal' => 'required',
+        'signatory' => 'required',
+        'kode_tujuan' => 'required',
+        'klasifikasi' => 'required',
+        'tanggal' => 'required|date',
+    ]);
 
-        $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $request->tanggal)->count();
-        $urut = str_pad($jumlahHariIni + 1, 3, '0', STR_PAD_LEFT);
+    $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $request->tanggal)->count();
+    $urut = str_pad($jumlahHariIni + 1, 3, '0', STR_PAD_LEFT);
 
-        // Ambil data berdasarkan ID yang dipilih di form
-        $penandatangan = Penandatangan::find($request->signatory);
-        $tujuan = TujuanSurat::find($request->kode_tujuan);
-        $klasifikasi = KlasifikasiSurat::find($request->klasifikasi);
+    // Ambil data berdasarkan ID yang dipilih di form
+    $penandatangan = Penandatangan::find($request->signatory);
+    $tujuan = TujuanSurat::find($request->kode_tujuan);
+    $klasifikasi = KlasifikasiSurat::find($request->klasifikasi);
 
-        // Susun nomor surat menggunakan KODE, bukan ID
-        $nomor = $urut . '/' .
-                $klasifikasi->kode . '/' .
-                $penandatangan->kode . '/' .
-                $tujuan->kode . '/' .
-                date('Y', strtotime($request->tanggal));
+    // Format baru: PENANDATANGAN-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ
+    // Contoh: SG26-BD05-SKP/20260710.004
+    $nomor = $penandatangan->kode . '-' .
+            $tujuan->kode . '-' .
+            $klasifikasi->kode . '/' .
+            date('Ymd', strtotime($request->tanggal)) . '.' .
+            $urut;
 
-        RiwayatSurat::create([
-            'nomor_surat' => $nomor,
-            'perihal' => $request->perihal,
-            'tanggal' => $request->tanggal,
-            'penandatangan_id' => $request->signatory,
-            'tujuan_surat_id' => $request->kode_tujuan,
-            'klasifikasi_surat_id' => $request->klasifikasi,
-            'user_id' => Auth::id(),
-        ]);
+    RiwayatSurat::create([
+        'nomor_surat' => $nomor,
+        'perihal' => $request->perihal,
+        'tanggal' => $request->tanggal,
+        'penandatangan_id' => $request->signatory,
+        'tujuan_surat_id' => $request->kode_tujuan,
+        'klasifikasi_surat_id' => $request->klasifikasi,
+        'user_id' => Auth::id(),
+    ]);
 
-<<<<<<< HEAD
-        return redirect()->route('tambahsurat')
-            ->with('success', 'Surat berhasil dibuat.')
-            ->with('created_nomor', $nomor);
-    }
+    return redirect()->route('tambahsurat')
+        ->with('success', 'Surat berhasil dibuat.')
+        ->with('created_nomor', $nomor);
+}
 
     public function showUpload($id)
     {
@@ -171,32 +171,4 @@ class RiwayatSuratController extends Controller
             'sequence' => str_pad($jumlah + 1, 3, '0', STR_PAD_LEFT)
         ]);
     }
-=======
-       return redirect()->route('riwayatsurat')
-    ->with('success', 'Surat berhasil dibuat.');
-}
-
-public function showUpload($id)
-{
-    return redirect()->back();
-}
-
-public function storeUpload(Request $request, $id)
-{
-    return response()->json(['message' => 'Not implemented'], 501);
-}
-
-public function deleteUpload($id)
-{
-    return response()->json(['message' => 'Not implemented'], 501);
-}
-
-public function getNextSequence(Request $request)
-{
-    $tanggal = $request->input('tanggal', now()->toDateString());
-    $count = RiwayatSurat::whereDate('tanggal', $tanggal)->count();
-    $next = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
-    return response()->json(['nextSequence' => $next]);
-}
->>>>>>> b911605fc3e5bb1ac9b2c7e034508cf072cd7125
 }

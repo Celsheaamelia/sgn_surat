@@ -13,6 +13,8 @@
     {{-- CSS khusus halaman Tambah Surat --}}
     <link rel="stylesheet" href="{{ asset('asset/tambahsurat.css') }}">
 
+    @stack('styles') {{-- <<< BARIS BARU: tempat nampung @push('styles') dari child view --}}
+
     <style>
         body {
             margin: 0;
@@ -154,6 +156,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+@stack('scripts') {{-- <<< BARIS BARU: tempat nampung @push('scripts') dari child view --}}
 
 </body>
 </html>
