@@ -41,7 +41,14 @@ class RiwayatSuratController extends Controller
 
     public function create()
     {
-        $penandatanganList = Penandatangan::orderBy('jabatan')->get();
+       $penandatanganList = Penandatangan::orderByRaw("
+    CASE 
+        WHEN jabatan = 'General Manager' THEN 1
+        WHEN jabatan = 'Manager' THEN 2
+        WHEN jabatan = 'Asisten Manager' THEN 3
+        ELSE 4
+    END
+")->get();
         $tujuanList = TujuanSurat::orderBy('nama_tujuan')->get();
         $klasifikasiList = KlasifikasiSurat::orderBy('jenis_surat')->get();
 
