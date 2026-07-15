@@ -516,6 +516,7 @@
                                 </div>
 
                                 {{-- Kode Tujuan (searchable) --}}
+                                {{-- searchable --}}
                                 <div class="col-md-6">
                                     <label for="kode_tujuan" class="form-label">
                                         Kode Tujuan <span class="ledger-required">*</span>
@@ -535,6 +536,7 @@
 
                             <div class="row g-3 mb-3">
                                 {{-- Klasifikasi Surat (searchable) --}}
+                                {{-- searchable --}}
                                 <div class="col-md-6">
                                     <label for="klasifikasi" class="form-label">
                                         Klasifikasi Surat <span class="ledger-required">*</span>
