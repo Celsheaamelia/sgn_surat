@@ -42,7 +42,7 @@ class RiwayatSuratController extends Controller
     public function create()
     {
        $penandatanganList = Penandatangan::orderByRaw("
-    CASE 
+    CASE
         WHEN jabatan = 'General Manager' THEN 1
         WHEN jabatan = 'Manager' THEN 2
         WHEN jabatan = 'Asisten Manager' THEN 3
@@ -74,7 +74,7 @@ class RiwayatSuratController extends Controller
         'signatory' => 'required',
         'kode_tujuan' => 'required',
         'klasifikasi' => 'required',
-        'tanggal' => 'required|date',
+        'tanggal' => 'required|date|date_equals:today',
     ]);
 
     $jumlahHariIni = RiwayatSurat::whereDate('tanggal', $request->tanggal)->count();

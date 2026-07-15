@@ -328,7 +328,7 @@
 </style>
 
 <div class="ledger-page" id="riwayatPage">
-    <div class="container-fluid py-4 py-md-5">
+    <div class="container-fluid py-1 py-md-2">
 
         {{-- Alert sukses (jika ada aksi hapus dll) --}}
         @if (session('success'))

@@ -328,7 +328,7 @@
 </style>
 
 <div class="ledger-page">
-    <div class="container-fluid py-4 py-md-5">
+    <div class="container-fluid py-1 py-md-2">
 
         @if($surat->detailSurat)
         <div class="alert alert-success">
@@ -639,4 +639,3 @@
 </script>
 
 @endsection
- 

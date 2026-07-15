@@ -449,7 +449,7 @@
 </style>
 
 <div class="ledger-page">
-    <div class="container-fluid py-4 py-md-5">
+    <div class="container-fluid py-1 py-md-2">
 
         {{-- Alert sukses --}}
         @if (session('success'))
@@ -562,6 +562,8 @@
                                         id="tanggal"
                                         required
                                         value="{{ old('tanggal', date('Y-m-d')) }}"
+                                        min="{{ date('Y-m-d') }}"
+                                        max="{{ date('Y-m-d') }}"
                                         class="form-control">
                                 </div>
                             </div>
