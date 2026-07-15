@@ -40,7 +40,7 @@
     }
 
     .ledger-page {
-        background: var(--ledger);
+        background: transparent;
         font-family: var(--font-body);
         color: var(--ink);
         min-height: 100vh;
