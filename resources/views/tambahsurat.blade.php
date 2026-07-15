@@ -490,7 +490,7 @@
                                     name="perihal"
                                     id="perihal"
                                     required
-                                    placeholder="e.g. Annual Budget Approval Request"
+                                    placeholder="Keterangan surat"
                                     value="{{ old('perihal') }}"
                                     class="form-control">
                             </div>
