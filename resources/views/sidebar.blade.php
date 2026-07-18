@@ -38,21 +38,21 @@
                         <li>
                             <a href="{{ route('tambahsurat') }}"
                                class="nav-sublink {{ request()->routeIs('tambahsurat') ? 'active' : '' }}">
-                                <i class="bi bi-dot"></i>
+                                <i class="bi bi-file-earmark-plus"></i>
                                 <span>Buat Nomor Surat</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('keepnomorsurat') }}"
                                class="nav-sublink {{ request()->routeIs('keepnomorsurat') ? 'active' : '' }}">
-                                <i class="bi bi-dot"></i>
+                                <i class="bi bi-file-earmark"></i>
                                 <span>Keep Nomor Surat</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('riwayatsurat') }}"
                                 class="nav-sublink {{ request()->routeIs('riwayatsurat') ? 'active' : '' }}">
-                                <i class="bi bi-dot"></i>
+                                <i class="bi bi-folder2-open"></i>
                                 <span>Riwayat Surat</span>
                             </a>
                         </li>
@@ -60,23 +60,45 @@
                 </div>
             </li>
 
-            {{-- <li>
-                <a href="{{ route('riwayatsurat') }}" class="nav-link {{ request()->routeIs('riwayatsurat') ? 'active' : '' }}">
-                    <i class="bi bi-folder2-open"></i>
-                    <span>Riwayat Surat</span>
+            <li>
+                <a href="#arsipSppSubmenu" data-bs-toggle="collapse" role="button"
+                   aria-expanded="{{ request()->routeIs('arsipkasbon.*') ? 'true' : 'false' }}"
+                   aria-controls="arsipSppSubmenu"
+                   class="nav-link nav-link-parent {{ request()->routeIs('arsipkasbon.*') ? 'active' : '' }}">
+                    <i class="bi bi-receipt"></i>
+                    <span class="flex-grow-1">Arsip SPP</span>
+                    <i class="bi bi-chevron-down nav-caret"></i>
                 </a>
-            </li> --}}
+                <div class="collapse {{ request()->routeIs('arsipkasbon.*') ? 'show' : '' }}" id="arsipSppSubmenu">
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="{{ route('arsipkasbon.create') }}"
+                               class="nav-sublink {{ request()->routeIs('arsipkasbon.create') ? 'active' : '' }}">
+                                <i class="bi bi-camera"></i>
+                                <span>Upload Surat Baru</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('arsipkasbon.index') }}"
+                               class="nav-sublink {{ request()->routeIs('arsipkasbon.index') || request()->routeIs('arsipkasbon.show') ? 'active' : '' }}">
+                                <i class="bi bi-clock-history"></i>
+                                <span>Riwayat Arsip SPP</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
 
         </ul>
     </div>
 
-    {{-- <div class="user-profile">
+    <div class="user-profile">
         <div class="avatar">A</div>
         <div class="user-meta">
             <strong>Administrator</strong>
-            <small>Online</small>
+            {{-- <small>Online</small> --}}
         </div>
-    </div> --}}
+    </div>
 </aside>
 
 <style>
@@ -188,13 +210,12 @@
 
     .nav-link-parent {
         cursor: pointer;
-        position: relative;
     }
 
     .nav-caret {
-        margin-left: auto;
         font-size: 0.75rem !important;
         width: auto !important;
+        margin-left: auto;
         transition: transform 0.2s ease;
     }
 
@@ -204,41 +225,44 @@
 
     .nav-submenu {
         list-style: none;
-        margin: 0.3rem 0 0.15rem 0;
-        padding: 0;
+        margin: 0.35rem 0 0.15rem;
+        padding: 0 0 0 1.6rem;
         display: flex;
         flex-direction: column;
-        gap: 0.15rem;
+        gap: 0.3rem;
+        border-left: 1px solid rgba(255, 255, 255, 0.14);
+        margin-left: 1.15rem;
     }
 
     .nav-sublink {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        text-decoration: none;
-        color: rgba(248, 250, 252, 0.72);
-        padding: 0.6rem 0.95rem 0.6rem 2.35rem;
-        border-radius: 10px;
-        font-family: 'Inter', -apple-system, sans-serif;
-        font-weight: 500;
-        font-size: 0.87rem;
-        transition: all 0.2s ease;
-    }
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-decoration: none;
+    color: rgba(248, 250, 252, 0.75);
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
 
     .nav-sublink i {
-        font-size: 0.5rem;
-        width: 8px;
+        font-size: 0.85rem;
+        width: 16px;
+        text-align: center;
     }
 
     .nav-sublink:hover {
-        background: rgba(255, 255, 255, 0.09);
+        background: rgba(255, 255, 255, 0.1);
         color: white;
     }
 
     .nav-sublink.active {
-        background: rgba(16, 185, 129, 0.18);
+        background: linear-gradient(135deg, #10b981, #047857);
         color: white;
-        font-weight: 600;
+        box-shadow: 0 8px 18px rgba(4, 120, 87, 0.18);
     }
 
     .user-profile {

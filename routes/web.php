@@ -8,6 +8,8 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\RiwayatSuratController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KeepController;
+use App\Http\Controllers\ArsipKasbonController;
+use App\Services\GeminiService;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -82,11 +84,34 @@ function simpanSurat(array $data): void
     Route::get('/surat/next-sequence', [RiwayatSuratController::class, 'getNextSequence'])
     ->name('surat.next-sequence');
 
-//         Route::get('/surat/{id}/upload', [SuratController::class, 'showUpload'])->name('surat.upload');
-// Route::post('/surat/{id}/upload', [SuratController::class, 'storeUpload'])->name('surat.upload.store');
+    Route::get('/arsip-kasbon', [ArsipKasbonController::class, 'index'])
+        ->name('arsipkasbon.index');
+
+    Route::get('/arsip-kasbon/tambah', [ArsipKasbonController::class, 'create'])
+        ->name('arsipkasbon.create');
+
+    Route::post('/arsip-kasbon/scan', [ArsipKasbonController::class, 'scan'])
+        ->name('arsipkasbon.scan');
+
+    Route::post('/arsip-kasbon', [ArsipKasbonController::class, 'store'])
+        ->name('arsipkasbon.store');
+
+    Route::get('/arsip-kasbon/{arsipKasbon}', [ArsipKasbonController::class, 'show'])
+        ->name('arsipkasbon.show');
+
+    Route::delete('/arsip-kasbon/{arsipKasbon}', [ArsipKasbonController::class, 'destroy'])
+        ->name('arsipkasbon.destroy');
+
+    Route::get('/arsip-kasbon-api/lookup-akun/{noAkun}', [ArsipKasbonController::class, 'lookupAkun'])
+        ->name('arsipkasbon.lookup-akun');
+
+    Route::get('/arsip-kasbon-api/check-document', [ArsipKasbonController::class, 'checkDocumentNo'])
+        ->name('arsipkasbon.check-document');
 
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');
+
+        Route::get('/test-gemini', function (GeminiService $gemini) {
+    return $gemini->generateText('Halo, siapa kamu?');
 });
-
-
+});
