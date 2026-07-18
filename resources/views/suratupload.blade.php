@@ -537,9 +537,6 @@
     </div>
 </div>
 
-{{-- ==========================================================================
-     Modal preview file — muncul sebagai popup di tengah layar, bukan tab baru
-     ========================================================================== --}}
 @if($surat->detailSurat)
     @php
         $fileUrl = Storage::url($surat->detailSurat->file_path);
