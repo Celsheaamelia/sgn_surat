@@ -32,6 +32,35 @@
                 </a>
             </li>
 
+            <li>
+                <a href="#arsipSppSubmenu" data-bs-toggle="collapse" role="button"
+                   aria-expanded="{{ request()->routeIs('arsipkasbon.*') ? 'true' : 'false' }}"
+                   aria-controls="arsipSppSubmenu"
+                   class="nav-link nav-link-parent {{ request()->routeIs('arsipkasbon.*') ? 'active' : '' }}">
+                    <i class="bi bi-receipt"></i>
+                    <span class="flex-grow-1">Arsip SPP</span>
+                    <i class="bi bi-chevron-down nav-caret"></i>
+                </a>
+                <div class="collapse {{ request()->routeIs('arsipkasbon.*') ? 'show' : '' }}" id="arsipSppSubmenu">
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="{{ route('arsipkasbon.create') }}"
+                               class="nav-sublink {{ request()->routeIs('arsipkasbon.create') ? 'active' : '' }}">
+                                <i class="bi bi-camera"></i>
+                                <span>Upload Surat Baru</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('arsipkasbon.index') }}"
+                               class="nav-sublink {{ request()->routeIs('arsipkasbon.index') || request()->routeIs('arsipkasbon.show') ? 'active' : '' }}">
+                                <i class="bi bi-clock-history"></i>
+                                <span>Riwayat Arsip SPP</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
         </ul>
     </div>
 
@@ -146,6 +175,63 @@
         font-size: 1rem;
         width: 18px;
         text-align: center;
+    }
+
+    .nav-link-parent {
+        cursor: pointer;
+    }
+
+    .nav-caret {
+        font-size: 0.75rem !important;
+        width: auto !important;
+        margin-left: auto;
+        transition: transform 0.2s ease;
+    }
+
+    .nav-link-parent[aria-expanded="true"] .nav-caret {
+        transform: rotate(180deg);
+    }
+
+    .nav-submenu {
+        list-style: none;
+        margin: 0.35rem 0 0.15rem;
+        padding: 0 0 0 1.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        border-left: 1px solid rgba(255, 255, 255, 0.14);
+        margin-left: 1.15rem;
+    }
+
+    .nav-sublink {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        text-decoration: none;
+        color: rgba(248, 250, 252, 0.75);
+        padding: 0.6rem 0.85rem;
+        border-radius: 10px;
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .nav-sublink i {
+        font-size: 0.85rem;
+        width: 16px;
+        text-align: center;
+    }
+
+    .nav-sublink:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .nav-sublink.active {
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: white;
+        box-shadow: 0 8px 18px rgba(4, 120, 87, 0.18);
     }
 
     .user-profile {
