@@ -109,6 +109,12 @@
         border: 1px solid rgba(169,129,47,0.25);
     }
 
+    .ledger-status-pill.is-reserved {
+        background: var(--brass-tint);
+        color: var(--brass-dark);
+        border: 1px solid rgba(169,129,47,0.25);
+    }
+
     /* ==========================================================================
        Toolbar — same input styling language as Tambah Surat's form fields
        ========================================================================== */
@@ -404,34 +410,36 @@
                         </thead>
                         <tbody id="archiveList">
                             @foreach ($suratList as $surat)
-                                @php
-                                    $isUploaded = ($surat->status ?? 'Belum Terupload') === 'Terupload';
-                                @endphp
-                                <tr
-                                    data-perihal="{{ strtolower($surat->perihal) }}"
-                                    data-nomor="{{ strtolower($surat->nomor_surat) }}"
-                                    data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
-                                    data-tanggal="{{ $surat->tanggal }}">
-                                    <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
-                                    <td class="ledger-perihal">{{ $surat->perihal }}</td>
-                                    <td class="ledger-tujuan">{{ $surat->tujuanSurat->nama_tujuan ?? '-' }}</td>
-                                    <td class="ledger-signatory">{{ $surat->penandatangan->jabatan ?? '-' }}</td>
-                                    <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
-                                    <td>
-                                        <span class="ledger-status-pill {{ $isUploaded ? 'is-uploaded' : 'is-pending' }}">
-                                            {{ $surat->status ?? 'Belum Terupload' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('surat.upload.show', $surat->id) }}" class="ledger-btn-detail">
-                                            <i class="fa-regular fa-eye"></i>
-                                            Detail
-                                        </a>
-
-                                    </td>
-
-                                </tr>
-                            @endforeach
+                            @php
+                                $statusClass = match($surat->status ?? 'Belum Terupload') {
+                                    'Terupload'    => 'is-uploaded',
+                                    'Direservasi'  => 'is-reserved',
+                                    default        => 'is-pending',
+                                };
+                            @endphp
+                            <tr
+                                data-perihal="{{ strtolower($surat->perihal) }}"
+                                data-nomor="{{ strtolower($surat->nomor_surat) }}"
+                                data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
+                                data-tanggal="{{ $surat->tanggal }}">
+                                <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
+                                <td class="ledger-perihal">{{ $surat->perihal }}</td>
+                                <td class="ledger-tujuan">{{ $surat->tujuanSurat->nama_tujuan ?? '-' }}</td>
+                                <td class="ledger-signatory">{{ $surat->penandatangan->jabatan ?? '-' }}</td>
+                                <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
+                                <td>
+                                    <span class="ledger-status-pill {{ $statusClass }}">
+                                        {{ $surat->status ?? 'Belum Terupload' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ route('surat.upload.show', $surat->id) }}" class="ledger-btn-detail">
+                                        <i class="fa-regular fa-eye"></i>
+                                        {{ $surat->status === 'Direservasi' ? 'Detail' : 'Detail' }}
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
                         </tbody>
                     </table>
                 </div>

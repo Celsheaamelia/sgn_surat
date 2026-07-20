@@ -71,44 +71,57 @@ class RiwayatSuratController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'perihal' => 'required',
-        'signatory' => 'required',
-        'kode_tujuan' => 'required',
-        'klasifikasi' => 'required',
-        'tanggal' => 'required|date|date_equals:today',
-    ]);
+    {
+        $request->validate([
+            'perihal'     => 'required',
+            'signatory'   => 'required',
+            'kode_tujuan' => 'required',
+            'klasifikasi' => 'required',
+            'tanggal'     => 'required|date|date_equals:today',
+            'nomor_urut'  => 'required|integer|min:1',
+        ]);
 
-    $urut = str_pad($this->nextAvailableSequence($request->tanggal), 3, '0', STR_PAD_LEFT);
+        $nomorInt = (int) $request->nomor_urut;
+        $grouped  = $this->groupedUsedNumbersForDate($request->tanggal);
 
-    // Ambil data berdasarkan ID yang dipilih di form
-    $penandatangan = Penandatangan::find($request->signatory);
-    $tujuan = TujuanSurat::find($request->kode_tujuan);
-    $klasifikasi = KlasifikasiSurat::find($request->klasifikasi);
+        if (in_array($nomorInt, $grouped['terpakai'])) {
+            return back()->withInput()->with('error',
+                'Nomor #' . str_pad($nomorInt, 3, '0', STR_PAD_LEFT) . ' sudah dipakai (sudah jadi surat).'
+            );
+        }
 
-    // Format baru: PENANDATANGAN-TUJUAN-KLASIFIKASI/YYYYMMDD.SEQ
-    // Contoh: SG26-BD05-SKP/20260710.004
-    $nomor = $penandatangan->kode . '-' .
-            $tujuan->kode . '-' .
-            $klasifikasi->kode . '/' .
-            date('Ymd', strtotime($request->tanggal)) . '.' .
-            $urut;
+        if (in_array($nomorInt, $grouped['direservasi'])) {
+            return back()->withInput()->with('error',
+                'Nomor #' . str_pad($nomorInt, 3, '0', STR_PAD_LEFT) . ' sudah di-keep. Pilih nomor lain.'
+            );
+        }
 
-    RiwayatSurat::create([
-        'nomor_surat' => $nomor,
-        'perihal' => $request->perihal,
-        'tanggal' => $request->tanggal,
-        'penandatangan_id' => $request->signatory,
-        'tujuan_surat_id' => $request->kode_tujuan,
-        'klasifikasi_surat_id' => $request->klasifikasi,
-        'user_id' => Auth::id(),
-    ]);
+        $urut = str_pad($nomorInt, 3, '0', STR_PAD_LEFT);
 
-    return redirect()->route('tambahsurat')
-        ->with('success', 'Surat berhasil dibuat.')
-        ->with('created_nomor', $nomor);
-}
+        $penandatangan = Penandatangan::find($request->signatory);
+        $tujuan        = TujuanSurat::find($request->kode_tujuan);
+        $klasifikasi   = KlasifikasiSurat::find($request->klasifikasi);
+
+        $nomor = $penandatangan->kode . '-' .
+                $tujuan->kode . '-' .
+                $klasifikasi->kode . '/' .
+                date('Ymd', strtotime($request->tanggal)) . '.' .
+                $urut;
+
+        RiwayatSurat::create([
+            'nomor_surat'          => $nomor,
+            'perihal'              => $request->perihal,
+            'tanggal'              => $request->tanggal,
+            'penandatangan_id'     => $request->signatory,
+            'tujuan_surat_id'      => $request->kode_tujuan,
+            'klasifikasi_surat_id' => $request->klasifikasi,
+            'user_id'              => Auth::id(),
+        ]);
+
+        return redirect()->route('tambahsurat')
+            ->with('success', 'Surat berhasil dibuat.')
+            ->with('created_nomor', $nomor);
+    }
 
     public function showUpload($id)
     {
@@ -175,5 +188,16 @@ class RiwayatSuratController extends Controller
         return response()->json([
             'sequence' => str_pad($this->nextAvailableSequence($request->tanggal), 3, '0', STR_PAD_LEFT)
         ]);
+    }
+
+    public function cekStatusNomor(Request $request)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+        ]);
+
+        return response()->json(
+            $this->groupedUsedNumbersForDate($request->tanggal)
+        );
     }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Letter Management System</title>
+    <title>Register - Letter Management System</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -91,11 +91,6 @@
             color: #6c757d;
         }
 
-        .form-check-input:checked {
-            background-color: var(--brand);
-            border-color: var(--brand);
-        }
-
         a.link-brand {
             color: var(--brand);
             text-decoration: none;
@@ -117,11 +112,39 @@
             color: #fff;
         }
 
-        .status-box {
-            background: #eef2ea;
-            border: 1px solid #cdd9c8;
-            color: var(--brand);
-            border-radius: 0.5rem;
+        .btn-google {
+            background: #fff;
+            border: 1px solid #dcdcdc;
+            color: #3c4043;
+        }
+
+        .btn-google:hover {
+            background: #f7f7f7;
+            color: #3c4043;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: #adb5bd;
+            font-size: .8rem;
+            margin: 1.25rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #eee;
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: .75rem;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: .75rem;
         }
     </style>
 </head>
@@ -135,58 +158,65 @@
             <p class="text-muted small mt-1 mb-0">Letter System</p>
         </div>
 
-        {{-- Card Login --}}
+        {{-- Card Register --}}
         <div class="card login-card">
 
-            {{-- Header Card --}}
             <div class="card-header">
-                <h2 class="h5 mb-1">Masuk ke Akun Anda</h2>
-                <p class="text-muted small mb-0">Silakan masukkan email dan password untuk melanjutkan.</p>
+                <h2 class="h5 mb-1">Buat Akun Baru</h2>
+                <p class="text-muted small mb-0">Lengkapi data di bawah untuk mendaftar.</p>
             </div>
 
             <div class="card-body">
 
-                {{-- Alert Error --}}
                 @if ($errors->any())
                     <div class="alert alert-danger py-2 small" role="alert">
                         {{ $errors->first() }}
                     </div>
                 @endif
 
-                @if (session('status'))
-                    <div class="status-box px-3 py-2 small mb-3">
-                        {{ session('status') }}
-                    </div>
-                @endif
-
-                {{-- Form Login --}}
-                <form action="{{ url('/login') }}" method="POST">
+                <form action="{{ route('register.store') }}" method="POST">
                     @csrf
 
                     {{-- Username --}}
-                <div class="mb-3">
-                    <label for="username" class="form-label">
-                        Username <span class="text-danger">*</span>
-                    </label>
-
-                    <div class="input-icon">
-                        <i class="fa-regular fa-user leading"></i>
-
-                        <input
-                            id="username"
-                            type="text"
-                            name="username"
-                            value="{{ old('username') }}"
-                            required
-                            autofocus
-                            placeholder="Masukkan username"
-                            class="form-control @error('username') is-invalid @enderror">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            Username <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-icon">
+                            <i class="fa-regular fa-user leading"></i>
+                            <input
+                                id="username"
+                                type="text"
+                                name="username"
+                                value="{{ old('username') }}"
+                                required
+                                autofocus
+                                placeholder="Masukkan username"
+                                class="form-control @error('username') is-invalid @enderror">
+                        </div>
+                        @error('username')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
 
-                        @error('username')
-                            <div class="text-danger small mt-1">
-                                {{ $message }}
-                            </div>
+                    {{-- Email --}}
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-icon">
+                            <i class="fa-regular fa-envelope leading"></i>
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                placeholder="nama@email.com"
+                                class="form-control @error('email') is-invalid @enderror">
+                        </div>
+                        @error('email')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -202,10 +232,10 @@
                                 type="password"
                                 name="password"
                                 required
-                                placeholder="••••••••"
+                                placeholder="Minimal 8 karakter"
                                 class="form-control has-toggle @error('password') is-invalid @enderror">
-                            <button type="button" class="toggle-password" onclick="togglePassword()">
-                                <i id="toggleIcon" class="fa-regular fa-eye"></i>
+                            <button type="button" class="toggle-password" onclick="togglePassword('password','toggleIcon1')">
+                                <i id="toggleIcon1" class="fa-regular fa-eye"></i>
                             </button>
                         </div>
                         @error('password')
@@ -213,45 +243,57 @@
                         @enderror
                     </div>
 
-                    {{-- Remember + Forgot --}}
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" name="remember" class="form-check-input" id="remember">
-                            <label class="form-check-label small text-muted" for="remember">
-                                Ingat saya
-                            </label>
+                    {{-- Confirm Password --}}
+                    <div class="mb-3">
+                        <label for="password_confirmation" class="form-label">
+                            Konfirmasi Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-lock leading"></i>
+                            <input
+                                id="password_confirmation"
+                                type="password"
+                                name="password_confirmation"
+                                required
+                                placeholder="Ulangi password"
+                                class="form-control has-toggle">
+                            <button type="button" class="toggle-password" onclick="togglePassword('password_confirmation','toggleIcon2')">
+                                <i id="toggleIcon2" class="fa-regular fa-eye"></i>
+                            </button>
                         </div>
-
-                        @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}" class="link-brand small">
-                                Lupa password?
-                            </a>
-                        @endif
                     </div>
 
                     {{-- Submit --}}
                     <button type="submit" class="btn btn-brand w-100 d-flex align-items-center justify-content-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket"></i>
-                        Masuk
+                        <i class="fa-solid fa-user-plus"></i>
+                        Daftar
                     </button>
                 </form>
-                    <p class="text-center small text-muted mt-3 mb-0">
-                        Belum punya akun?
-                        <a href="{{ route('register') }}" class="link-brand">Daftar di sini</a>
-                    </p>
+
+                <div class="divider">atau</div>
+
+                {{-- Register via Google --}}
+                <a href="{{ route('google.redirect') }}" class="btn btn-google w-100 d-flex align-items-center justify-content-center gap-2">
+                    <img src="{{ asset('images/google.png') }}" alt="Google" width="25" height="20">
+                    Daftar dengan Google
+                </a>
+
+                <p class="text-center small text-muted mt-3 mb-0">
+                    Sudah punya akun?
+                    <a href="{{ route('login') }}" class="link-brand">Masuk di sini</a>
+                </p>
             </div>
         </div>
 
-        {{-- Footer --}}
         <p class="text-center text-muted small mt-4 mb-0">
             &copy; {{ date('Y') }} Letter Management System. All rights reserved.
         </p>
     </div>
 
     <script>
-        function togglePassword() {
-            const input = document.getElementById('password');
-            const icon = document.getElementById('toggleIcon');
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.classList.remove('fa-eye');

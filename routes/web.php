@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KeepController;
 use App\Http\Controllers\ArsipKasbonController;
 use App\Services\GeminiService;
+use App\Http\Controllers\RegisterController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -20,6 +21,12 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/login', [LoginController::class,'index'])->name('login');
     Route::post('/login', [LoginController::class,'login']);
+
+    Route::get('/register', [RegisterController::class, 'index'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register'])->name('register.store');
+
+    Route::get('/auth/google', [RegisterController::class, 'redirectToGoogle'])->name('google.redirect');
+    Route::get('/auth/google/callback', [RegisterController::class, 'handleGoogleCallback'])->name('google.callback');
 
 });
 
@@ -60,11 +67,12 @@ function simpanSurat(array $data): void
     Route::post('/keep-nomor-surat', [KeepController::class, 'storeKeepNomor'])
         ->name('keepnomorsurat.store');
 
-    Route::post('/keep-nomor-surat/{id}/gunakan', [KeepController::class, 'gunakanKeepNomor'])
-        ->name('keepnomorsurat.gunakan');
+    // Route::post('/keep-nomor-surat/{id}/gunakan', [KeepController::class, 'gunakanKeepNomor'])
+    //     ->name('keepnomorsurat.gunakan');
 
-    Route::get('/keep-nomor-surat/cek-nomor', [KeepController::class, 'cekNomorTerpakai'])
-    ->name('keepnomorsurat.cek-nomor');
+    Route::get('/keepnomorsurat/cek-nomor', [KeepController::class, 'cekNomorTerpakai'])->name('keepnomorsurat.cek-nomor');
+
+    Route::delete('/keepnomorsurat/{id}/cancel', [KeepController::class, 'cancelKeepNomor'])->name('keepnomorsurat.cancel');
 
     Route::get('/riwayat-surat/{riwayatSurat}', [RiwayatSuratController::class,'show'])
     ->name('surat.show');
@@ -83,6 +91,8 @@ function simpanSurat(array $data): void
 
     Route::get('/surat/next-sequence', [RiwayatSuratController::class, 'getNextSequence'])
     ->name('surat.next-sequence');
+
+    Route::get('/surat/cek-status-nomor', [RiwayatSuratController::class, 'cekStatusNomor'])->name('surat.cek-status-nomor');
 
     Route::get('/arsip-kasbon', [ArsipKasbonController::class, 'index'])
         ->name('arsipkasbon.index');
