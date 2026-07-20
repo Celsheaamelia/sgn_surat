@@ -138,7 +138,7 @@
                     <div>
                         <div class="hero-stat-label">Tanggal</div>
                         <div class="hero-stat-val">{{ optional($kasbon->tanggal_transaksi)->format('d M Y') ?? '-' }}</div>
-                    </div>
+                        </div>
                     <div>
                         <div class="hero-stat-label">Jumlah Total</div>
                         <div class="hero-stat-val">{{ $kasbon->jumlah_total ? 'Rp '.number_format($kasbon->jumlah_total,0,',','.') : '-' }}</div>
@@ -228,6 +228,31 @@
                 </div>
             </div>
 
+            @if($kasbon->lampiran && $kasbon->lampiran->count())
+                <div class="card ledger-card mt-3">
+                    <div class="ledger-card-header">
+                        <div class="ledger-title" style="font-size:1.05rem;">Lampiran Tambahan ({{ $kasbon->lampiran->count() }})</div>
+                    </div>
+                    <div class="card-body">
+                        @foreach($kasbon->lampiran as $lampiran)
+                            <div class="d-flex align-items-center justify-content-between py-2" style="border-bottom:1px solid var(--line);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi {{ str_ends_with(strtolower($lampiran->file_path), '.pdf') ? 'bi-file-earmark-pdf-fill' : 'bi-file-earmark-image-fill' }}" style="color:var(--brass-dark);"></i>
+                                    <span>{{ $lampiran->file_name ?? 'Lampiran' }}</span>
+                                </div>
+                                <button type="button" class="btn btn-link small p-0"
+                                        data-bs-toggle="modal" data-bs-target="#lampiranPreviewModal"
+                                        data-file-url="{{ Storage::url($lampiran->file_path) }}"
+                                        data-file-name="{{ $lampiran->file_name ?? 'Lampiran' }}"
+                                        data-is-pdf="{{ str_ends_with(strtolower($lampiran->file_path), '.pdf') ? '1' : '0' }}">
+                                    Lihat
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <a href="{{ route('arsipkasbon.index') }}" class="btn ledger-btn-ghost mt-3">
                 <i class="bi bi-arrow-left me-1"></i> Kembali ke daftar
             </a>
@@ -257,6 +282,42 @@
         </div>
     </div>
 </div>
+@endif
+
+{{-- Modal preview lampiran tambahan (pop-up, dinamis sesuai file yang diklik) --}}
+@if($kasbon->lampiran && $kasbon->lampiran->count())
+<div class="modal fade scan-modal" id="lampiranPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            <div class="modal-body" id="lampiranModalBody">
+                {{-- Diisi JS pas modal dibuka --}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('lampiranPreviewModal').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    const fileUrl  = btn.getAttribute('data-file-url');
+    const fileName = btn.getAttribute('data-file-name');
+    const isPdf    = btn.getAttribute('data-is-pdf') === '1';
+    const body = document.getElementById('lampiranModalBody');
+
+    if (isPdf) {
+        body.innerHTML = `
+            <div class="scan-pdf-wrapper">
+                <iframe src="${fileUrl}" class="scan-pdf-frame" title="${fileName}"></iframe>
+                <a href="${fileUrl}" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Buka PDF di tab baru
+                </a>
+            </div>`;
+    } else {
+        body.innerHTML = `<img src="${fileUrl}" alt="${fileName}">`;
+    }
+});
+</script>
 @endif
 
 @endsection

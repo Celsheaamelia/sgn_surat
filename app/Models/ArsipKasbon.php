@@ -34,6 +34,11 @@ class ArsipKasbon extends Model
         return $this->hasMany(ArsipKasbonItem::class, 'arsip_kasbon_id');
     }
 
+    public function lampiran()
+    {
+        return $this->hasMany(ArsipKasbonLampiran::class, 'arsip_kasbon_id');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

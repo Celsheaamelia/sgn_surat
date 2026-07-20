@@ -66,7 +66,7 @@
                    aria-controls="arsipSppSubmenu"
                    class="nav-link nav-link-parent {{ request()->routeIs('arsipkasbon.*') ? 'active' : '' }}">
                     <i class="bi bi-receipt"></i>
-                    <span class="flex-grow-1">Arsip SPP</span>
+                    <span class="flex-grow-1">Surat Permintaan Pembayaran</span>
                     <i class="bi bi-chevron-down nav-caret"></i>
                 </a>
                 <div class="collapse {{ request()->routeIs('arsipkasbon.*') ? 'show' : '' }}" id="arsipSppSubmenu">
@@ -75,7 +75,7 @@
                             <a href="{{ route('arsipkasbon.create') }}"
                                class="nav-sublink {{ request()->routeIs('arsipkasbon.create') ? 'active' : '' }}">
                                 <i class="bi bi-camera"></i>
-                                <span>Upload Surat Baru</span>
+                                <span>Unggah Surat Baru</span>
                             </a>
                         </li>
                         <li>

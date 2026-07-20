@@ -224,7 +224,7 @@
                                     @else
                                         <i class="bi bi-inbox"></i>
                                         Belum ada SPP yang diarsipkan.
-                                        <div class="mt-1" style="font-size:0.85rem;">Mulai dengan <a href="{{ route('arsipkasbon.create') }}">scan surat baru</a>.</div>
+                                        <div class="mt-1" style="font-size:0.85rem;">Mulai dengan <a href="{{ route('arsipkasbon.create') }}">Unggah Surat Baru</a>.</div>
                                     @endif
                                 </div>
                             </td>
@@ -240,38 +240,6 @@
             </div>
         @endif
     </div>
-
-    {{-- Utility terpisah: kamus No Akun -> deskripsi. Bukan pencarian arsip. --}}
-    <details class="ledger-card akun-utility">
-        <summary>
-            <span><i class="bi bi-journal-bookmark-fill me-2" style="color:var(--brass-dark);"></i>Kamus No Akun (cek deskripsi baku dari sebuah nomor akun)</span>
-            <i class="bi bi-chevron-down chev"></i>
-        </summary>
-        <div class="akun-utility-body">
-            <form method="GET" action="{{ route('arsipkasbon.index') }}" class="d-flex gap-2 mb-3" style="max-width:420px;">
-                <input type="text" name="no_akun" value="{{ request('no_akun') }}"
-                       class="form-control" placeholder="cth. 51100107">
-                <button class="btn btn-outline-secondary" type="submit">
-                    <i class="bi bi-search"></i>
-                </button>
-            </form>
-
-            @if(request()->filled('no_akun'))
-                @if($hasilAkun && $hasilAkun->count())
-                    @foreach($hasilAkun as $akun)
-                        <div class="akun-result-row">
-                            <span class="akun-code">{{ $akun->no_akun }}</span>
-                            <span class="akun-desc">{{ $akun->deskripsi }}</span>
-                        </div>
-                    @endforeach
-                @else
-                    <p class="ledger-subtitle mb-0">Tidak ditemukan. Akun ini belum pernah tercatat dari surat manapun.</p>
-                @endif
-            @else
-                <p class="ledger-subtitle mb-0">Ketik nomor akun untuk melihat deskripsinya.</p>
-            @endif
-        </div>
-    </details>
 
 </div>
 
