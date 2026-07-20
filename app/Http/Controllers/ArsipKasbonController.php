@@ -146,6 +146,9 @@ class ArsipKasbonController extends Controller
             'temp_path'               => 'nullable|string',
             'file_scan'               => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:15360',
 
+            'lampiran'                => 'nullable|array',
+            'lampiran.*'              => 'file|mimes:jpg,jpeg,png,pdf|max:15360',
+
             'items'                   => 'required|array|min:1',
             'items.*.no_akun'         => 'required|string|max:30',
             'items.*.pk'              => 'nullable|string|max:20',
@@ -210,6 +213,16 @@ class ArsipKasbonController extends Controller
                     );
                 }
             }
+
+            // Simpan setiap file lampiran tambahan (kertas pendukung lain)
+            foreach ($request->file('lampiran', []) as $file) {
+                $path = $file->store('kasbon-lampiran', 'public');
+
+                $kasbon->lampiran()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                ]);
+            }
         });
 
         return redirect()
@@ -219,7 +232,7 @@ class ArsipKasbonController extends Controller
 
     public function show(ArsipKasbon $arsipKasbon)
     {
-        $arsipKasbon->load('items');
+        $arsipKasbon->load('items', 'lampiran');
         return view('arsipkasbon.show', ['kasbon' => $arsipKasbon]);
     }
 

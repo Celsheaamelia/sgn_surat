@@ -94,6 +94,60 @@
         display: flex; gap: 0.6rem; align-items: flex-start; font-weight: 600;
     }
     #f_document_no.is-duplicate { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(179,67,47,0.12); }
+
+    /* ==================== OCR Loading Overlay ==================== */
+    .ocr-loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(28, 43, 35, 0.55);
+        backdrop-filter: blur(2px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+    .ocr-loading-overlay.is-active {
+        opacity: 1;
+        pointer-events: all;
+    }
+    .ocr-loading-box {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        padding: 2.5rem 2.75rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.1rem;
+        box-shadow: 0 10px 40px rgba(28,43,35,0.25);
+        max-width: 90vw;
+        text-align: center;
+    }
+    .ocr-loading-spinner {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 4px solid var(--line);
+        border-top-color: var(--brass-dark);
+        animation: ocr-spin 0.8s linear infinite;
+    }
+    @keyframes ocr-spin {
+        to { transform: rotate(360deg); }
+    }
+    .ocr-loading-title {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--ink);
+    }
+    .ocr-loading-hint {
+        color: var(--ink-soft);
+        font-size: 0.82rem;
+        max-width: 260px;
+    }
 </style>
 
 <div class="container-fluid">
@@ -105,14 +159,14 @@
     {{-- STEP 1: Upload / Scan --}}
     <div class="card ledger-card mb-4" id="uploadCard">
         <div class="ledger-card-header">
-            <div class="ledger-title">Upload SPP</div>
-            <div class="ledger-subtitle">Upload foto Surat Permintaan Pembayaran (SPP) — sistem akan coba baca field-field utamanya secara otomatis.</div>
+            <div class="ledger-title">Unggah Surat Permintaan Pembayaran</div>
+            <div class="ledger-subtitle">Sistem akan membaca field-field utamanya secara otomatis.</div>
         </div>
         <div class="card-body">
             <label for="fileInput" class="ledger-dropzone" id="dropzone">
                 <i class="bi bi-camera-fill ledger-dropzone-icon"></i>
                 <p class="ledger-dropzone-text mb-1"><span class="fw-semibold">Klik untuk pilih foto</span> atau tarik & lepas di sini</p>
-                <p class="ledger-dropzone-hint mb-0">JPG, PNG, JPEG, PDF — maks. 10 MB. Pastikan pencahayaan cukup & tulisan tidak miring.</p>
+                <p class="ledger-dropzone-hint mb-0">JPG, PNG, JPEG, PDF maks. 10 MB. Pastikan pencahayaan cukup & tulisan tidak miring.</p>
                 <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.pdf" hidden>
             </label>
 
@@ -163,7 +217,7 @@
                 </div>
             @endif
 
-            <form id="finalForm" method="POST" action="{{ route('arsipkasbon.store') }}">
+            <form id="finalForm" method="POST" action="{{ route('arsipkasbon.store') }}" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="temp_path" id="temp_path">
 
@@ -197,8 +251,11 @@
                         <input type="text" name="deskripsi_cost_object" id="f_deskripsi_cost_object" class="form-control" value="{{ old('deskripsi_cost_object') }}">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label-sm">Jumlah Total (Rp)</label>
-                        <input type="number" step="0.01" name="jumlah_total" id="f_jumlah_total" class="form-control" value="{{ old('jumlah_total') }}">
+                        <label class="form-label-sm">Jumlah Total</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" inputmode="numeric" name="jumlah_total" id="f_jumlah_total" class="form-control" value="{{ old('jumlah_total') }}" placeholder="0">
+                        </div>
                     </div>
                     <div class="col-12">
                         <label class="form-label-sm">Terbilang</label>
@@ -214,8 +271,25 @@
                         <i class="bi bi-plus-lg me-1"></i> Tambah Baris
                     </button>
                 </div>
-
                 <div id="itemsWrapper"></div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="ledger-title" style="font-size:1.1rem;">Lampiran Tambahan</div>
+                </div>
+                <p class="ledger-subtitle mb-3">Kertas/dokumen pendukung lain yang perlu ikut diarsipkan bersama surat ini (opsional, boleh lebih dari satu).</p>
+
+                <label for="lampiranPicker" class="ledger-dropzone" id="lampiranDropzone" style="padding: 1.5rem 1rem;">
+                    <i class="bi bi-paperclip ledger-dropzone-icon"></i>
+                    <p class="ledger-dropzone-text mb-1"><span class="fw-semibold">Klik untuk pilih file</span> atau tarik &amp; lepas di sini</p>
+                    <p class="ledger-dropzone-hint mb-0">Bisa pilih beberapa file sekaligus. JPG, PNG, PDF — maks. 15 MB per file.</p>
+                    <input type="file" id="lampiranPicker" accept=".jpg,.jpeg,.png,.pdf" multiple hidden>
+                </label>
+
+                <div id="lampiranList" class="mt-3"></div>
+
+                <input type="file" name="lampiran[]" id="lampiranSubmitInput" multiple hidden>
 
                 <div class="d-flex justify-content-end gap-3 mt-4">
                     <a href="{{ route('arsipkasbon.index') }}" class="btn ledger-btn-ghost">Batal</a>
@@ -227,6 +301,15 @@
         </div>
     </div>
 
+</div>
+
+{{-- Overlay loading saat proses OCR berjalan --}}
+<div class="ocr-loading-overlay" id="ocrLoadingOverlay">
+    <div class="ocr-loading-box">
+        <div class="ocr-loading-spinner"></div>
+        <div class="ocr-loading-title">Sistem sedang membaca data otomatis...</div>
+        <div class="ocr-loading-hint">Mohon tunggu sebentar, proses ini biasanya memakan waktu beberapa detik.</div>
+    </div>
 </div>
 
 <template id="itemRowTemplate">
@@ -247,7 +330,10 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label-sm">Jumlah Rupiah</label>
-                <input type="number" step="0.01" class="form-control form-control-sm" data-field="jumlah_rupiah">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" inputmode="numeric" class="form-control form-control-sm" data-field="jumlah_rupiah" placeholder="0">
+                </div>
             </div>
             <div class="col-md-1 text-end">
                 <button type="button" class="item-row-remove" data-remove-row title="Hapus baris">
@@ -285,9 +371,50 @@
     const itemsWrapper = document.getElementById('itemsWrapper');
     const itemRowTemplate = document.getElementById('itemRowTemplate');
     const addRowBtn = document.getElementById('addRowBtn');
+    const ocrLoadingOverlay = document.getElementById('ocrLoadingOverlay');
+
+    function showOcrLoading() {
+        ocrLoadingOverlay.classList.add('is-active');
+    }
+    function hideOcrLoading() {
+        ocrLoadingOverlay.classList.remove('is-active');
+    }
+
+    // ==================== Format tampilan Rupiah (Rp + titik ribuan) ====================
+    function formatRibuan(value) {
+        const digitsOnly = String(value ?? '').replace(/[^\d]/g, '');
+        if (digitsOnly === '') return '';
+        return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function unformatRibuan(value) {
+        return String(value ?? '').replace(/[^\d]/g, '');
+    }
+
+    function attachRupiahFormatter(input) {
+        input.addEventListener('input', () => {
+            const cursorFromEnd = input.value.length - input.selectionStart;
+            input.value = formatRibuan(input.value);
+            const pos = input.value.length - cursorFromEnd;
+            input.setSelectionRange(pos, pos);
+        });
+    }
+
+    function setRupiahValue(input, rawNumber) {
+        input.value = formatRibuan(rawNumber);
+    }
+
+    const lampiranDropzone = document.getElementById('lampiranDropzone');
+    const lampiranPicker = document.getElementById('lampiranPicker');
+    const lampiranSubmitInput = document.getElementById('lampiranSubmitInput');
+    const lampiranList = document.getElementById('lampiranList');
+    let lampiranFiles = [];
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
         || document.querySelector('input[name="_token"]').value;
+
+    attachRupiahFormatter(document.getElementById('f_jumlah_total'));
+    document.getElementById('f_jumlah_total').value = formatRibuan(document.getElementById('f_jumlah_total').value);
 
     function formatBytes(b) {
         if (b < 1024) return b + ' B';
@@ -331,8 +458,10 @@
         row.querySelector('[data-field="no_akun"]').value = data.no_akun || '';
         row.querySelector('[data-field="pk"]').value = data.pk || '';
         row.querySelector('[data-field="cost_object"]').value = data.cost_object || '';
-        row.querySelector('[data-field="jumlah_rupiah"]').value = data.jumlah_rupiah || '';
+        setRupiahValue(row.querySelector('[data-field="jumlah_rupiah"]'), data.jumlah_rupiah);
         row.querySelector('[data-field="item_text"]').value = data.item_text || data.deskripsi_akun || '';
+
+        attachRupiahFormatter(row.querySelector('[data-field="jumlah_rupiah"]'));
 
         const hint = row.querySelector('[data-akun-hint]');
         if (data.deskripsi_akun) {
@@ -369,6 +498,71 @@
         itemsWrapper.appendChild(row);
     }
 
+    // ==================== Lampiran tambahan (multi-file) ====================
+    function formatBytesLampiran(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+        return (b/(1024*1024)).toFixed(1) + ' MB';
+    }
+
+    function syncLampiranInput() {
+        const dt = new DataTransfer();
+        lampiranFiles.forEach(f => dt.items.add(f));
+        lampiranSubmitInput.files = dt.files;
+    }
+
+    function renderLampiranList() {
+        lampiranList.innerHTML = '';
+
+        lampiranFiles.forEach((file, idx) => {
+            const isPdf = file.type === 'application/pdf';
+            const row = document.createElement('div');
+            row.className = 'mb-2';
+            row.className = 'mb-2';
+            row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;border:1px solid var(--line);border-radius:0.6rem;padding:0.6rem 0.9rem;background:#fff;';
+            row.innerHTML = `
+                <i class="bi ${isPdf ? 'bi-file-earmark-pdf-fill' : 'bi-file-earmark-image-fill'}" style="font-size:1.3rem;color:var(--brass-dark);"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold" style="color:var(--ink); font-size:0.88rem;">${file.name}</div>
+                    <div class="ledger-subtitle" style="font-size:0.76rem;">${formatBytesLampiran(file.size)}</div>
+                </div>
+                <button type="button" class="btn ledger-btn-ghost" data-remove-lampiran="${idx}"><i class="bi bi-x-lg"></i></button>
+            `;
+            lampiranList.appendChild(row);
+        });
+
+        lampiranList.querySelectorAll('[data-remove-lampiran]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-remove-lampiran'), 10);
+                lampiranFiles.splice(idx, 1);
+                syncLampiranInput();
+                renderLampiranList();
+            });
+        });
+    }
+
+    function addLampiranFiles(fileList) {
+        Array.from(fileList).forEach(f => lampiranFiles.push(f));
+        syncLampiranInput();
+        renderLampiranList();
+    }
+
+    lampiranPicker.addEventListener('change', () => {
+        if (lampiranPicker.files.length) addLampiranFiles(lampiranPicker.files);
+        lampiranPicker.value = '';
+    });
+
+    ['dragover','dragenter'].forEach(evt => lampiranDropzone.addEventListener(evt, e => {
+        e.preventDefault(); lampiranDropzone.classList.add('is-dragover');
+    }));
+    ['dragleave','drop'].forEach(evt => lampiranDropzone.addEventListener(evt, e => {
+        e.preventDefault(); lampiranDropzone.classList.remove('is-dragover');
+    }));
+    lampiranDropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) addLampiranFiles(e.dataTransfer.files);
+    });
+
     addRowBtn.addEventListener('click', () => addItemRow());
 
     scanBtn.addEventListener('click', () => {
@@ -376,6 +570,7 @@
 
         scanBtn.disabled = true;
         scanBtnText.textContent = 'Membaca surat...';
+        showOcrLoading();
 
         const fd = new FormData();
         fd.append('file_scan', fileInput.files[0]);
@@ -398,7 +593,8 @@
             document.getElementById('f_kode_vendor').value = h.kode_vendor || '';
             document.getElementById('f_cek_giro_trx').value = h.cek_giro_trx || '';
             document.getElementById('f_deskripsi_cost_object').value = h.deskripsi_cost_object || '';
-            document.getElementById('f_jumlah_total').value = h.jumlah_total || '';
+            setRupiahValue(document.getElementById('f_jumlah_total'), h.jumlah_total);
+            document.getElementById('f_terbilang').value = h.terbilang || '';
 
             itemsWrapper.innerHTML = '';
             const items = (res.items && res.items.length) ? res.items : [{}];
@@ -426,6 +622,7 @@
         .finally(() => {
             scanBtn.disabled = false;
             scanBtnText.textContent = 'Upload & Baca Otomatis';
+            hideOcrLoading();
         });
     });
 
@@ -433,13 +630,17 @@
     document.getElementById('finalForm').addEventListener('submit', function (e) {
         const form = e.target;
 
+        // Bersihkan format "1.507.889" jadi angka polos "1507889" sebelum dikirim ke server
+        document.getElementById('f_jumlah_total').value = unformatRibuan(document.getElementById('f_jumlah_total').value);
+
         form.querySelectorAll('[data-hidden-item]').forEach(el => el.remove());
 
         const rows = itemsWrapper.querySelectorAll('[data-row]');
         rows.forEach((row, idx) => {
             const fields = ['no_akun', 'pk', 'cost_object', 'jumlah_rupiah', 'item_text'];
             fields.forEach(f => {
-                const val = row.querySelector(`[data-field="${f}"]`).value;
+                let val = row.querySelector(`[data-field="${f}"]`).value;
+                if (f === 'jumlah_rupiah') val = unformatRibuan(val);
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = `items[${idx}][${f}]`;
