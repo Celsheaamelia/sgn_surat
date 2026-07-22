@@ -298,7 +298,7 @@
                                 <button type="reset" class="btn ledger-btn-ghost">Reset</button>
                                 <button type="submit" class="btn ledger-btn-brass" id="keepSubmitBtn">
                                     <i class="fa-solid fa-lock me-1"></i>
-                                    Simpan Cadangan Nomor
+                                    Cadangkan Nomor
                                 </button>
                             </div>
                         </form>

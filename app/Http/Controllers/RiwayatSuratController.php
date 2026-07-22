@@ -23,7 +23,7 @@ class RiwayatSuratController extends Controller
             'tujuanSurat',
             'klasifikasiSurat',
             'detailSurat'
-        ])->latest()->get();
+        ])->latest()->paginate(10)->withQueryString();
 
         $klasifikasiList = KlasifikasiSurat::orderBy('kode')->get();
 

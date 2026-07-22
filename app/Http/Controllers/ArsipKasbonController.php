@@ -2,21 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ArsipKasbonExport;
 use App\Models\ArsipKasbon;
 use App\Models\ArsipKasbonItem;
 use App\Models\MasterAkun;
 use App\Services\KasbonOcrService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ArsipKasbonController extends Controller
 {
-    /**
-     * Daftar arsip kasbon.
-     */
     public function index(Request $request)
+    {
+        $arsipList = $this->filteredQuery($request)
+            ->paginate(10)
+            ->withQueryString();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return view('arsipkasbon.partials.results', compact('arsipList'));
+        }
+
+        return view('arsipkasbon.index', compact('arsipList'));
+    }
+    public function export(Request $request)
+    {
+        $filters = $request->only(['q', 'tanggal_dari', 'tanggal_sampai']);
+        $filename = 'arsip-spp-' . now()->format('Ymd-His') . '.xlsx';
+
+        return Excel::download(new ArsipKasbonExport($filters), $filename);
+    }
+
+    protected function filteredQuery(Request $request): Builder
     {
         $query = ArsipKasbon::with('items')->latest();
 
@@ -24,7 +46,6 @@ class ArsipKasbonController extends Controller
             $keyword = trim($request->q);
 
             $query->where(function ($sub) use ($keyword) {
-                // Cari di semua field header surat
                 $sub->where('document_no', 'like', "%{$keyword}%")
                     ->orWhere('nama_vendor', 'like', "%{$keyword}%")
                     ->orWhere('kode_vendor', 'like', "%{$keyword}%")
@@ -33,12 +54,9 @@ class ArsipKasbonController extends Controller
                     ->orWhere('deskripsi_cost_object', 'like', "%{$keyword}%")
                     ->orWhere('terbilang', 'like', "%{$keyword}%")
                     ->orWhere('file_scan_name', 'like', "%{$keyword}%")
-                    // Cocokkan juga kalau keyword adalah angka nominal (jumlah_total)
                     ->orWhere('jumlah_total', 'like', "%{$keyword}%")
-                    // Cari juga di tanggal yang sudah diformat, misal "16 Juli 2026" atau "2026-07-16"
                     ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%d-%m-%Y') LIKE ?", ["%{$keyword}%"])
                     ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%Y-%m-%d') LIKE ?", ["%{$keyword}%"])
-                    // Cari di rincian akun (baris item)
                     ->orWhereHas('items', function ($item) use ($keyword) {
                         $item->where('no_akun', 'like', "%{$keyword}%")
                             ->orWhere('pk', 'like', "%{$keyword}%")
@@ -48,9 +66,15 @@ class ArsipKasbonController extends Controller
             });
         }
 
-        $arsipList = $query->paginate(10)->withQueryString();
+        if ($request->filled('tanggal_dari')) {
+            $query->whereDate('tanggal_transaksi', '>=', $request->tanggal_dari);
+        }
 
-        return view('arsipkasbon.index', compact('arsipList'));
+        if ($request->filled('tanggal_sampai')) {
+            $query->whereDate('tanggal_transaksi', '<=', $request->tanggal_sampai);
+        }
+
+        return $query;
     }
 
     public function create()
@@ -58,11 +82,86 @@ class ArsipKasbonController extends Controller
         return view('arsipkasbon.create');
     }
 
-    /**
-     * Endpoint AJAX dipanggil setelah admin pilih file di form upload.
-     * Menjalankan OCR dan mengembalikan field-field tebakan sebagai JSON,
-     * TIDAK menyimpan apapun ke database.
-     */
+    protected function findDuplicateDocument(string $documentNo, ?string $tanggalTransaksi = null, ?int $excludeId = null): ?ArsipKasbon
+    {
+        $query = ArsipKasbon::where('document_no', $documentNo);
+
+        if (!empty($tanggalTransaksi)) {
+            try {
+                $year = Carbon::parse($tanggalTransaksi)->year;
+                $query->whereYear('tanggal_transaksi', $year);
+            } catch (\Exception $e) {
+                // Tanggal tidak valid, biarkan fallback ke cek global di bawah.
+            }
+        }
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->first();
+    }
+
+    protected function duplicateMessage(string $documentNo, ?string $tanggalTransaksi = null): string
+    {
+        $year = null;
+        if (!empty($tanggalTransaksi)) {
+            try {
+                $year = Carbon::parse($tanggalTransaksi)->year;
+            } catch (\Exception $e) {
+                // abaikan, tampilkan pesan tanpa tahun
+            }
+        }
+
+        return $year
+            ? "Surat Permintaan Pembayaran dengan No Dokumen \"{$documentNo}\" untuk tahun {$year} sudah pernah diunggah sebelumnya."
+            : "Surat Permintaan Pembayaran dengan No Dokumen \"{$documentNo}\" sudah pernah diunggah sebelumnya.";
+    }
+
+    protected function buildScanFileName(?string $documentNo, ?string $tanggalTransaksi, string $extension): string
+    {
+        $year = null;
+        if (!empty($tanggalTransaksi)) {
+            try {
+                $year = Carbon::parse($tanggalTransaksi)->year;
+            } catch (\Exception $e) {
+                // abaikan, lanjut tanpa tahun
+            }
+        }
+
+        $base = !empty($documentNo) ? $documentNo : 'SPP-' . now()->format('YmdHis');
+
+        // Ganti karakter selain huruf/angka/-/_ dengan "-" (mis. "/", spasi, ":")
+        $base = preg_replace('/[^A-Za-z0-9\-_]+/', '-', $base);
+        $base = trim($base, '-');
+
+        if ($base === '') {
+            $base = 'SPP-' . now()->format('YmdHis');
+        }
+
+        $name = $year ? "{$base}_{$year}" : $base;
+        $extension = strtolower($extension) ?: 'bin';
+
+        return "{$name}.{$extension}";
+    }
+
+    protected function uniqueStorageName(string $directory, string $filename, string $disk = 'public'): string
+    {
+        $dotPos = strrpos($filename, '.');
+        $name = $dotPos !== false ? substr($filename, 0, $dotPos) : $filename;
+        $ext = $dotPos !== false ? substr($filename, $dotPos) : '';
+
+        $candidate = $filename;
+        $counter = 2;
+
+        while (Storage::disk($disk)->exists($directory . '/' . $candidate)) {
+            $candidate = $name . '-' . $counter . $ext;
+            $counter++;
+        }
+
+        return $candidate;
+    }
+
     public function scan(Request $request, KasbonOcrService $ocr)
     {
         $request->validate([
@@ -81,15 +180,17 @@ class ArsipKasbonController extends Controller
             $item['deskripsi_akun'] = $master?->deskripsi;
         }
 
-        // Cek apakah document_no hasil bacaan OCR sudah pernah diarsipkan sebelumnya.
+        // Cek apakah document_no hasil bacaan OCR sudah pernah diarsipkan sebelumnya
+        // di TAHUN yang sama (document_no boleh dipakai ulang kalau tahunnya beda).
         $duplicate = null;
         $documentNo = $result['header']['document_no'] ?? null;
+        $tanggalTransaksi = $result['header']['tanggal_transaksi'] ?? null;
         if (!empty($documentNo)) {
-            $existing = ArsipKasbon::where('document_no', $documentNo)->first();
+            $existing = $this->findDuplicateDocument($documentNo, $tanggalTransaksi);
             if ($existing) {
                 $duplicate = [
                     'document_no' => $documentNo,
-                    'message'     => "Surat Permintaan Pembayaran dengan No Dokumen \"{$documentNo}\" sudah pernah diunggah sebelumnya.",
+                    'message'     => $this->duplicateMessage($documentNo, $tanggalTransaksi),
                     'existing_id' => $existing->id,
                 ];
             }
@@ -110,12 +211,13 @@ class ArsipKasbonController extends Controller
     public function checkDocumentNo(Request $request)
     {
         $documentNo = trim((string) $request->query('document_no', ''));
+        $tanggalTransaksi = $request->query('tanggal_transaksi');
 
         if ($documentNo === '') {
             return response()->json(['duplicate' => false]);
         }
 
-        $existing = ArsipKasbon::where('document_no', $documentNo)->first();
+        $existing = $this->findDuplicateDocument($documentNo, $tanggalTransaksi);
 
         if (!$existing) {
             return response()->json(['duplicate' => false]);
@@ -123,7 +225,7 @@ class ArsipKasbonController extends Controller
 
         return response()->json([
             'duplicate'   => true,
-            'message'     => "Surat Permintaan Pembayaran dengan No Dokumen \"{$documentNo}\" sudah pernah diunggah sebelumnya.",
+            'message'     => $this->duplicateMessage($documentNo, $tanggalTransaksi),
             'existing_id' => $existing->id,
         ]);
     }
@@ -135,7 +237,21 @@ class ArsipKasbonController extends Controller
     {
         $validated = $request->validate([
             'tanggal_transaksi'      => 'nullable|date',
-            'document_no'            => 'nullable|string|max:50|unique:arsip_kasbon,document_no',
+            'document_no'            => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('arsip_kasbon', 'document_no')->where(function ($query) use ($request) {
+                    if ($request->filled('tanggal_transaksi')) {
+                        try {
+                            $year = Carbon::parse($request->tanggal_transaksi)->year;
+                            $query->whereYear('tanggal_transaksi', $year);
+                        } catch (\Exception $e) {
+                            // Tanggal tidak valid, biarkan fallback ke cek global.
+                        }
+                    }
+                }),
+            ],
             'park_oleh'               => 'nullable|string|max:100',
             'nama_vendor'             => 'nullable|string|max:150',
             'kode_vendor'             => 'nullable|string|max:50',
@@ -157,21 +273,37 @@ class ArsipKasbonController extends Controller
             'items.*.jumlah_rupiah'   => 'nullable|numeric',
             'items.*.deskripsi_akun'  => 'nullable|string',
         ], [
-            'document_no.unique' => 'Surat Permintaan Pembayaran dengan No Dokumen ":input" sudah pernah diunggah sebelumnya.',
+            'document_no.unique' => 'Surat Permintaan Pembayaran dengan No Dokumen ":input" untuk tahun ini sudah pernah diunggah sebelumnya.',
         ]);
 
         DB::transaction(function () use ($request, $validated) {
-            // Pindahkan file dari lokasi sementara (hasil scan) ke penyimpanan final,
-            // atau pakai file baru kalau admin upload ulang di step ini.
             $finalPath = null;
             $finalName = null;
 
             if ($request->hasFile('file_scan')) {
-                $finalPath = $request->file('file_scan')->store('kasbon', 'public');
-                $finalName = $request->file('file_scan')->getClientOriginalName();
+                $uploadedFile = $request->file('file_scan');
+                $extension = $uploadedFile->getClientOriginalExtension()
+                    ?: $uploadedFile->extension()
+                    ?: 'bin';
+
+                $baseName = $this->buildScanFileName(
+                    $validated['document_no'] ?? null,
+                    $validated['tanggal_transaksi'] ?? null,
+                    $extension
+                );
+                $finalName = $this->uniqueStorageName('kasbon', $baseName);
+                $finalPath = $uploadedFile->storeAs('kasbon', $finalName, 'public');
             } elseif ($request->filled('temp_path') && Storage::disk('local')->exists($request->temp_path)) {
-                $finalName = basename($request->temp_path);
-                $finalPath = 'kasbon/' . uniqid() . '_' . $finalName;
+                $extension = pathinfo($request->temp_path, PATHINFO_EXTENSION) ?: 'png';
+
+                $baseName = $this->buildScanFileName(
+                    $validated['document_no'] ?? null,
+                    $validated['tanggal_transaksi'] ?? null,
+                    $extension
+                );
+                $finalName = $this->uniqueStorageName('kasbon', $baseName);
+                $finalPath = 'kasbon/' . $finalName;
+
                 Storage::disk('public')->put(
                     $finalPath,
                     Storage::disk('local')->get($request->temp_path)

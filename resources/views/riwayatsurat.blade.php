@@ -205,6 +205,12 @@
         font-size: 0.9rem;
     }
 
+    .ledger-table .ledger-no {
+        color: var(--ink-soft);
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+    }
+
     .ledger-table .ledger-nomor {
         color: var(--brass-dark);
         font-family: var(--font-mono);
@@ -326,6 +332,52 @@
         overflow-x: auto;
     }
 
+    /* ==========================================================================
+       Pagination — override Bootstrap's default blue to match ledger theme
+       ========================================================================== */
+
+    #archiveCard .pagination {
+        gap: 0.3rem;
+        flex-wrap: wrap;
+    }
+
+    #archiveCard .page-item .page-link {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        background-color: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+        padding: 0.45rem 0.75rem;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    #archiveCard .page-item .page-link:hover {
+        background-color: var(--brass-tint);
+        color: var(--brass-dark);
+        border-color: rgba(169,129,47,0.35);
+    }
+
+    #archiveCard .page-item .page-link:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(169,129,47,0.16);
+        border-color: var(--brass);
+    }
+
+    #archiveCard .page-item.active .page-link {
+        background-color: var(--brass-dark);
+        border-color: var(--brass-dark);
+        color: #fff;
+    }
+
+    #archiveCard .page-item.disabled .page-link {
+        color: var(--ledger-line);
+        background-color: var(--paper);
+        border-color: var(--line);
+        opacity: 0.7;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         * {
             transition: none !important;
@@ -353,7 +405,7 @@
                     </div>
                     <div id="totalCounter">
                         <span class="ledger-badge">
-                            <span id="totalCount">{{ count($suratList ?? []) }}</span> surat tercatat
+                            <span id="totalCount">{{ $suratList->total() ?? 0 }}</span> surat tercatat
                         </span>
                     </div>
                 </div>
@@ -394,11 +446,12 @@
 
         {{-- Archive table --}}
         <div class="card ledger-card" id="archiveCard">
-            @if (count($suratList ?? []) > 0)
+            @if ($suratList->count() > 0)
                 <div class="ledger-table-scroll">
                     <table class="ledger-table">
                         <thead>
                             <tr>
+                                <th style="width:1%;">No</th>
                                 <th>Nomor Surat</th>
                                 <th>Perihal</th>
                                 <th>Tujuan</th>
@@ -422,6 +475,7 @@
                                 data-nomor="{{ strtolower($surat->nomor_surat) }}"
                                 data-klasifikasi="{{ $surat->klasifikasiSurat->kode ?? '' }}"
                                 data-tanggal="{{ $surat->tanggal }}">
+                                <td class="ledger-no"></td>
                                 <td class="ledger-nomor">{{ $surat->nomor_surat }}</td>
                                 <td class="ledger-perihal">{{ $surat->perihal }}</td>
                                 <td class="ledger-tujuan">{{ $surat->tujuanSurat->nama_tujuan ?? '-' }}</td>
@@ -443,6 +497,12 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if ($suratList->hasPages())
+                    <div class="card-body">
+                        {{ $suratList->links() }}
+                    </div>
+                @endif
 
                 <div id="emptySearchState" class="d-none">
                     <div class="ledger-empty">
@@ -469,6 +529,37 @@
     const emptySearchState = document.getElementById('emptySearchState');
     const totalCount = document.getElementById('totalCount');
 
+    // Nomor urut mengikuti halaman pagination yang lagi aktif, jadi kalau
+    // paginate-nya 10/halaman dan lagi di halaman 2, nomornya lanjut dari 11.
+    // Ambil dari elemen page-link yang aktif; fallback ke 1 kalau tidak ada pagination.
+    function currentPageOffset() {
+        const activePageLink = document.querySelector('#archiveCard .page-item.active .page-link');
+        if (!activePageLink) return 0;
+        const pageNum = parseInt(activePageLink.textContent.trim(), 10);
+        if (isNaN(pageNum)) return 0;
+        // Asumsi jumlah per halaman = jumlah baris di halaman pertama render awal.
+        const perPage = archiveList ? archiveList.querySelectorAll('tr').length : 0;
+        return (pageNum - 1) * perPage;
+    }
+
+    // Beri nomor urut 1,2,3... hanya untuk baris yang sedang terlihat (tidak
+    // ada class d-none), sesuai urutan tampil saat ini di DOM (setelah sort).
+    function renumberVisibleRows() {
+        if (!archiveList) return;
+        const offset = currentPageOffset();
+        let n = 1;
+        Array.from(archiveList.querySelectorAll('tr')).forEach(row => {
+            const noCell = row.querySelector('.ledger-no');
+            if (!noCell) return;
+            if (row.classList.contains('d-none')) {
+                noCell.textContent = '';
+            } else {
+                noCell.textContent = offset + n;
+                n++;
+            }
+        });
+    }
+
     function applyFilters() {
         if (!archiveList) return;
 
@@ -494,6 +585,8 @@
         if (emptySearchState) {
             emptySearchState.classList.toggle('d-none', visibleCount !== 0);
         }
+
+        renumberVisibleRows();
     }
 
     function applySort() {
@@ -519,6 +612,9 @@
             applyFilters();
         });
     }
+
+    // Nomori baris begitu halaman selesai dimuat.
+    renumberVisibleRows();
 </script>
 
 @endsection

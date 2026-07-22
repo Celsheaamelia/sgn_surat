@@ -307,7 +307,7 @@
 <div class="ocr-loading-overlay" id="ocrLoadingOverlay">
     <div class="ocr-loading-box">
         <div class="ocr-loading-spinner"></div>
-        <div class="ocr-loading-title">Sistem sedang membaca data otomatis...</div>
+        <div class="ocr-loading-title">Sistem sedang membaca data...</div>
         <div class="ocr-loading-hint">Mohon tunggu sebentar, proses ini biasanya memakan waktu beberapa detik.</div>
     </div>
 </div>
@@ -604,8 +604,9 @@
             verifyCard.classList.remove('d-none');
             verifyCard.scrollIntoView({ behavior: 'smooth' });
 
-            // Kalau OCR berhasil baca No Dokumen dan ternyata sudah pernah diunggah,
-            // langsung munculkan notifnya di sini -- gak perlu nunggu submit.
+            // Kalau OCR berhasil baca No Dokumen dan ternyata sudah pernah diunggah
+            // di TAHUN yang sama, langsung munculkan notifnya di sini -- gak perlu
+            // nunggu submit.
             if (res.duplicate) {
                 showDuplicateWarning(res.duplicate.message);
             } else {
@@ -665,8 +666,10 @@
             alert('Tambahkan minimal 1 baris akun.');
         }
     });
-    // ==================== Cek duplikat No Dokumen ====================
+
+    // ==================== Cek duplikat No Dokumen (di-scope ke TAHUN transaksi) ====================
     const documentNoInput = document.getElementById('f_document_no');
+    const tanggalTransaksiInput = document.getElementById('f_tanggal_transaksi');
     const duplicateBanner = document.getElementById('duplicateBanner');
     const duplicateBannerText = document.getElementById('duplicateBannerText');
     const submitBtn = document.querySelector('#finalForm button[type="submit"]');
@@ -688,12 +691,19 @@
     }
 
     let checkDocTimer = null;
-    function checkDocumentNoLive(value) {
+    function checkDocumentNoLive() {
         clearTimeout(checkDocTimer);
+
+        const value = documentNoInput.value.trim();
         if (!value) { clearDuplicateWarning(); return; }
 
         checkDocTimer = setTimeout(() => {
-            fetch(`{{ route('arsipkasbon.check-document') }}?document_no=${encodeURIComponent(value)}`)
+            const params = new URLSearchParams({ document_no: value });
+            if (tanggalTransaksiInput.value) {
+                params.set('tanggal_transaksi', tanggalTransaksiInput.value);
+            }
+
+            fetch(`{{ route('arsipkasbon.check-document') }}?${params.toString()}`)
                 .then(r => r.json())
                 .then(res => {
                     if (res.duplicate) showDuplicateWarning(res.message);
@@ -703,7 +713,10 @@
         }, 350);
     }
 
-    documentNoInput.addEventListener('input', () => checkDocumentNoLive(documentNoInput.value.trim()));
+    // Cek ulang setiap kali Document No ATAU Tanggal Transaksi berubah,
+    // karena tahunnya yang menentukan apakah dianggap duplikat.
+    documentNoInput.addEventListener('input', checkDocumentNoLive);
+    tanggalTransaksiInput.addEventListener('change', checkDocumentNoLive);
 
     // Blokir submit kalau masih terdeteksi duplikat
     document.getElementById('finalForm').addEventListener('submit', function (e) {
@@ -714,7 +727,8 @@
     });
 
     // Kalau halaman ini dimuat ulang karena validasi server gagal (misal duplikat
-    // No Dokumen), langsung buka form verifikasi lagi dengan data yang tadi diisi.
+    // No Dokumen di tahun yang sama), langsung buka form verifikasi lagi dengan
+    // data yang tadi diisi.
     if (HAS_VALIDATION_ERROR) {
         uploadCard.classList.add('d-none');
         verifyCard.classList.remove('d-none');
@@ -725,9 +739,12 @@
             addItemRow();
         }
         if (documentNoInput.classList.contains('is-duplicate')) {
-            showDuplicateWarning(documentNoInput.value
-                ? `Surat Permintaan Pembayaran dengan No Dokumen "${documentNoInput.value}" sudah pernah diunggah sebelumnya.`
-                : null);
+            let msg = null;
+            if (documentNoInput.value) {
+                const yr = tanggalTransaksiInput.value ? new Date(tanggalTransaksiInput.value).getFullYear() : null;
+                msg = `Surat Permintaan Pembayaran dengan No Dokumen "${documentNoInput.value}"${yr ? ' untuk tahun ' + yr : ''} sudah pernah diunggah sebelumnya.`;
+            }
+            showDuplicateWarning(msg);
         }
     }
 })();

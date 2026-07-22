@@ -100,6 +100,9 @@ function simpanSurat(array $data): void
     Route::get('/arsip-kasbon/tambah', [ArsipKasbonController::class, 'create'])
         ->name('arsipkasbon.create');
 
+    Route::get('/arsip-kasbon/export', [ArsipKasbonController::class, 'export'])
+    ->name('arsipkasbon.export');
+
     Route::post('/arsip-kasbon/scan', [ArsipKasbonController::class, 'scan'])
         ->name('arsipkasbon.scan');
 

@@ -14,6 +14,11 @@
         --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
 
+    /* (Catatan: sebelumnya di sini ada max-width untuk halaman, tapi ternyata
+       tidak diperlukan — perbaikan gap kolom sudah cukup lewat table-layout:auto
+       di bawah. max-width malah bikin konten menciut padahal areanya masih lebar,
+       jadi dihapus supaya konten kembali mengisi penuh lebar yang tersedia.) */
+
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.75rem; }
     .page-title { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; color: var(--ink); }
     .page-subtitle { color: var(--ink-soft); font-size: 0.92rem; margin-top: 0.2rem; }
@@ -50,13 +55,46 @@
         position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
         border: none; background: var(--line); color: var(--ink-soft);
         width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-        text-decoration: none; font-size: 0.85rem;
+        text-decoration: none; font-size: 0.85rem; cursor: pointer;
     }
     .search-hint { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.55rem; }
     .search-hint strong { color: var(--ink-soft); }
 
+    /* ---- Filter row: tanggal + reset + export ---- */
+    .filter-row {
+        display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;
+    }
+    .filter-date-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .filter-date-label {
+        font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em;
+        text-transform: uppercase; color: var(--ink-faint);
+    }
+    .filter-date-group input[type="date"] {
+        border: 1.5px solid var(--line); border-radius: 0.6rem; padding: 0.55rem 0.8rem;
+        font-size: 0.88rem; color: var(--ink); background: #fff;
+    }
+    .filter-date-group input[type="date"]:focus {
+        outline: none; border-color: var(--brass); box-shadow: 0 0 0 4px rgba(169,129,47,0.12);
+    }
+    .filter-row .ledger-btn-ghost {
+        padding: 0.55rem 0.9rem; border: 1.5px solid var(--line); border-radius: 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    /* ---- Highlighted search match ---- */
+    mark.search-hl {
+        background: var(--brass-bg);
+        color: var(--brass-dark);
+        font-weight: 700;
+        padding: 0 2px;
+        border-radius: 3px;
+    }
+
+    /* ---- Results container (swapped via AJAX) ---- */
+    #resultsContainer { transition: opacity 0.15s ease; }
+
     /* ---- Stats strip ---- */
-    .stats-strip { display: flex; gap: 1rem; padding: 0 1.75rem 1.5rem; flex-wrap: wrap; }
+    .stats-strip { display: flex; gap: 1rem; padding: 1.25rem 1.75rem 0; flex-wrap: wrap; }
     .stat-chip {
         background: #fff; border: 1px solid var(--line); border-radius: 0.7rem;
         padding: 0.7rem 1.1rem; display: flex; align-items: center; gap: 0.6rem;
@@ -65,12 +103,18 @@
     .stat-chip strong { color: var(--ink); font-family: var(--font-mono); font-size: 0.95rem; }
     .stat-chip i { color: var(--brass-dark); }
 
-    /* ---- Table ---- */
-    table.kasbon-table { margin: 0; }
+    /* ---- Table ----
+       width: 100% (header perlu penuh selebar card supaya tidak keliatan
+       "terpotong"). Sisa ruang kosong sekarang diserap oleh 1 kolom spacer
+       tak-terlihat di paling kanan (lihat .spacer-col), BUKAN oleh salah
+       satu kolom data — jadi header tetap full, tapi tidak ada gap aneh
+       nyempil di antara data. */
+    table.kasbon-table { margin: 0; width: 100%; table-layout: auto; }
+    table.kasbon-table .spacer-col { width: 100%; }
     table.kasbon-table thead th {
         font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em;
         text-transform: uppercase; color: var(--ink-faint); border-bottom: 1px solid var(--line);
-        padding: 0.9rem 1rem; background: #f7f8f5;
+        padding: 0.9rem 1rem; background: #f7f8f5; white-space: nowrap;
     }
     table.kasbon-table tbody td { vertical-align: middle; font-size: 0.9rem; padding: 0.95rem 1rem; border-bottom: 1px solid var(--line); }
     table.kasbon-table tbody tr:last-child td { border-bottom: none; }
@@ -86,44 +130,46 @@
     .vendor-name { font-weight: 600; color: var(--ink); }
     .vendor-doc { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-faint); }
 
-    .amount-val { font-family: var(--font-mono); font-weight: 700; color: var(--ink); }
+    .amount-val { font-family: var(--font-mono); font-weight: 700; color: var(--ink); white-space: nowrap; }
     .akun-badge {
         font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
         background: var(--brass-bg); color: var(--brass-dark); border: 1px solid #ecdfb8;
         padding: 0.25rem 0.55rem; border-radius: 6px; margin-right: 0.25rem; display: inline-block;
+        white-space: nowrap;
     }
-    .akun-more { font-size: 0.76rem; color: var(--ink-faint); }
+    .akun-more { font-size: 0.76rem; color: var(--ink-faint); white-space: nowrap; }
 
     .action-cell { display: flex; justify-content: flex-end; }
-    .action-btn {
-        width: 36px; height: 36px; border-radius: 0.55rem; display: inline-flex;
-        align-items: center; justify-content: center; line-height: 1;
+    .action-btn-detail {
+        display: inline-flex; align-items: center; white-space: nowrap;
+        padding: 0.45rem 0.9rem; border-radius: 0.55rem;
         border: 1px solid var(--line); color: var(--ink-soft); background: #fff; text-decoration: none;
-        transition: all 0.15s ease; font-size: 0.95rem;
+        font-size: 0.84rem; font-weight: 600;
+        transition: all 0.15s ease;
     }
-    .action-btn:hover { background: var(--brass-dark); border-color: var(--brass-dark); color: #fff; }
+    .action-btn-detail:hover { background: var(--brass-dark); border-color: var(--brass-dark); color: #fff; }
 
     .empty-state { text-align: center; padding: 3.5rem 1.5rem; color: var(--ink-soft); }
     .empty-state i { font-size: 2rem; color: var(--line); margin-bottom: 0.8rem; display: block; }
     .empty-state strong { color: var(--ink); }
 
-    /* ---- Cari No Akun (utility, dipindah jadi accordion ringkas) ---- */
-    .akun-utility summary {
-        cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between;
-        padding: 1rem 1.5rem; font-weight: 600; color: var(--ink); font-size: 0.9rem;
+    /* ---- Pagination — brass instead of Bootstrap blue ---- */
+    #resultsContainer .pagination { gap: 0.3rem; flex-wrap: wrap; }
+    #resultsContainer .page-item .page-link {
+        font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;
+        color: var(--ink-soft); background-color: #fff; border: 1px solid var(--line);
+        border-radius: 0.5rem; padding: 0.45rem 0.75rem;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
-    .akun-utility summary::-webkit-details-marker { display: none; }
-    .akun-utility summary .chev { transition: transform 0.15s ease; color: var(--ink-faint); }
-    .akun-utility[open] summary .chev { transform: rotate(180deg); }
-    .akun-utility-body { padding: 0 1.5rem 1.25rem; }
-    .akun-result-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 0.6rem 0; border-bottom: 1px solid var(--line);
-        font-family: var(--font-mono); font-size: 0.82rem;
+    #resultsContainer .page-item .page-link:hover {
+        background-color: var(--brass-bg); color: var(--brass-dark); border-color: rgba(169,129,47,0.35);
     }
-    .akun-result-row:last-child { border-bottom: none; }
-    .akun-code { font-weight: 700; color: var(--brass-dark); }
-    .akun-desc { color: var(--ink); font-family: var(--font-body); text-align: right; }
+    #resultsContainer .page-item.active .page-link {
+        background-color: var(--brass-dark); border-color: var(--brass-dark); color: #fff;
+    }
+    #resultsContainer .page-item.disabled .page-link {
+        color: var(--line); background-color: #fff; border-color: var(--line); opacity: 0.7;
+    }
 </style>
 
 <div class="container-fluid">
@@ -142,105 +188,159 @@
         <div class="alert alert-success mb-4">{{ session('success') }}</div>
     @endif
 
-    {{-- Search hero + daftar --}}
+    {{-- Card 1: search hero + filter --}}
     <div class="ledger-card mb-4">
-        <form method="GET" action="{{ route('arsipkasbon.index') }}" class="search-hero">
-            <div class="search-hero-label">Cari Arsip</div>
+        <div class="search-hero">
+            <div class="search-hero-label">Cari &amp; Filter Arsip</div>
             <div class="search-hero-box">
                 <i class="bi bi-search search-icon"></i>
-                <input type="text" name="q" value="{{ request('q') }}"
+                <input type="text" id="searchInput" value="{{ request('q') }}"
                        placeholder="Cari nama vendor, no dokumen, no akun, tanggal, cek/giro, deskripsi, terbilang...">
-                @if(request()->filled('q'))
-                    <a href="{{ route('arsipkasbon.index') }}" class="clear-btn" title="Reset pencarian">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                @endif
+                <a href="#" class="clear-btn d-none" id="clearSearchBtn" title="Reset pencarian">
+                    <i class="bi bi-x-lg"></i>
+                </a>
             </div>
             <div class="search-hint">
-                Pencarian mencakup <strong>semua informasi surat</strong> — header (vendor, dokumen, tanggal, cek/giro, cost object, terbilang) maupun rincian akun di dalamnya.
+                {{-- Pencarian mencakup <strong>semua informasi surat</strong> — header maupun rincian akun. Hasil muncul otomatis saat kamu mengetik. --}}
             </div>
-        </form>
 
-        <div class="stats-strip">
-            <div class="stat-chip"><i class="bi bi-folder2-open"></i> <strong>{{ $arsipList->total() }}</strong> surat terarsip</div>
-            @if(request()->filled('q'))
-                <div class="stat-chip"><i class="bi bi-funnel-fill"></i> menampilkan hasil untuk "<strong>{{ request('q') }}</strong>"</div>
-            @endif
-        </div>
-
-        <div class="table-responsive">
-            <table class="table kasbon-table">
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Vendor &amp; Dokumen</th>
-                        <th>Jumlah</th>
-                        <th>Rincian Akun</th>
-                        <th class="text-end pe-4">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($arsipList as $kasbon)
-                        <tr>
-                            <td style="white-space:nowrap;">{{ optional($kasbon->tanggal_transaksi)->format('d M Y') ?? '-' }}</td>
-                            <td>
-                                <div class="vendor-cell">
-                                    <div class="vendor-avatar">{{ strtoupper(substr($kasbon->nama_vendor ?? '?', 0, 1)) }}</div>
-                                    <div>
-                                        <div class="vendor-name">{{ $kasbon->nama_vendor ?? 'Vendor tidak diketahui' }}</div>
-                                        <div class="vendor-doc">{{ $kasbon->document_no ?? '—' }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="amount-val">{{ $kasbon->jumlah_total ? 'Rp ' . number_format($kasbon->jumlah_total, 0, ',', '.') : '-' }}</span>
-                            </td>
-                            <td>
-                                @forelse($kasbon->items->take(2) as $item)
-                                    <span class="akun-badge">{{ $item->no_akun }}</span>
-                                @empty
-                                    <span class="ledger-subtitle">-</span>
-                                @endforelse
-                                @if($kasbon->items->count() > 2)
-                                    <span class="akun-more">+{{ $kasbon->items->count() - 2 }} lagi</span>
-                                @endif
-                            </td>
-                            <td class="text-end pe-4">
-                                <div class="action-cell">
-                                    <a href="{{ route('arsipkasbon.show', $kasbon) }}" class="action-btn" title="Lihat detail">
-                                        <i class="bi bi-eye-fill"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5">
-                                <div class="empty-state">
-                                    @if(request()->filled('q'))
-                                        <i class="bi bi-search"></i>
-                                        Tidak ada surat yang cocok dengan <strong>"{{ request('q') }}"</strong>.
-                                        <div class="mt-1" style="font-size:0.85rem;">Coba kata kunci lain, atau <a href="{{ route('arsipkasbon.index') }}">reset pencarian</a>.</div>
-                                    @else
-                                        <i class="bi bi-inbox"></i>
-                                        Belum ada SPP yang diarsipkan.
-                                        <div class="mt-1" style="font-size:0.85rem;">Mulai dengan <a href="{{ route('arsipkasbon.create') }}">Unggah Surat Baru</a>.</div>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($arsipList->hasPages())
-            <div class="card-body">
-                {{ $arsipList->links() }}
+            <div class="filter-row mt-3">
+                <div class="filter-date-group">
+                    <label class="filter-date-label" for="filterTanggalDari">Dari tanggal</label>
+                    <input type="date" id="filterTanggalDari" value="{{ request('tanggal_dari') }}">
+                </div>
+                <div class="filter-date-group">
+                    <label class="filter-date-label" for="filterTanggalSampai">Sampai tanggal</label>
+                    <input type="date" id="filterTanggalSampai" value="{{ request('tanggal_sampai') }}">
+                </div>
+                <button type="button" class="btn ledger-btn-ghost" id="resetFilterBtn">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filter
+                </button>
+                <a href="{{ route('arsipkasbon.export') }}" class="btn btn-outline-secondary ms-md-auto" id="exportBtn">
+                    <i class="bi bi-file-earmark-excel"></i> Export ke Excel
+                </a>
             </div>
-        @endif
+        </div>
+    </div>
+
+    {{-- Card 2: hasil / daftar arsip --}}
+    <div class="ledger-card mb-4">
+        <div id="resultsContainer">
+            @include('arsipkasbon.partials.results')
+        </div>
     </div>
 
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const searchInput   = document.getElementById('searchInput');
+    const tanggalDari   = document.getElementById('filterTanggalDari');
+    const tanggalSampai = document.getElementById('filterTanggalSampai');
+    const resetBtn      = document.getElementById('resetFilterBtn');
+    const clearBtn      = document.getElementById('clearSearchBtn');
+    const exportBtn     = document.getElementById('exportBtn');
+    const resultsContainer = document.getElementById('resultsContainer');
+
+    const indexUrl  = '{{ route('arsipkasbon.index') }}';
+    const exportUrl = '{{ route('arsipkasbon.export') }}';
+
+    let debounceTimer = null;
+
+    function currentParams() {
+        const params = new URLSearchParams();
+        if (searchInput.value.trim()) params.set('q', searchInput.value.trim());
+        if (tanggalDari.value) params.set('tanggal_dari', tanggalDari.value);
+        if (tanggalSampai.value) params.set('tanggal_sampai', tanggalSampai.value);
+        return params;
+    }
+
+    function updateExportLink(params) {
+        const qs = params.toString();
+        exportBtn.href = qs ? `${exportUrl}?${qs}` : exportUrl;
+    }
+
+    function updateClearBtn() {
+        clearBtn.classList.toggle('d-none', !searchInput.value.trim());
+    }
+
+    function attachPaginationHandlers() {
+        resultsContainer.querySelectorAll('.pagination a.page-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const url = new URL(this.href);
+                const page = url.searchParams.get('page');
+                fetchResults(page);
+                resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    }
+
+    function fetchResults(page) {
+        const params = currentParams();
+        if (page) params.set('page', page);
+
+        updateExportLink(params);
+        resultsContainer.style.opacity = '0.45';
+
+        fetch(`${indexUrl}?${params.toString()}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+        .then(r => r.text())
+        .then(html => {
+            resultsContainer.innerHTML = html;
+            resultsContainer.style.opacity = '1';
+            attachPaginationHandlers();
+
+            const qs = params.toString();
+            const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+            history.replaceState(null, '', newUrl);
+        })
+        .catch(() => {
+            resultsContainer.style.opacity = '1';
+        });
+    }
+
+    searchInput.addEventListener('input', () => {
+        updateClearBtn();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchResults(), 350);
+    });
+
+    // Tetap jaga-jaga: kalau ada yang pencet Enter, langsung cari tanpa nunggu debounce
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            fetchResults();
+        }
+    });
+
+    [tanggalDari, tanggalSampai].forEach(el => {
+        el.addEventListener('change', () => fetchResults());
+    });
+
+    clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        searchInput.value = '';
+        updateClearBtn();
+        fetchResults();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        tanggalDari.value = '';
+        tanggalSampai.value = '';
+        updateClearBtn();
+        fetchResults();
+    });
+
+    updateClearBtn();
+    updateExportLink(currentParams());
+    attachPaginationHandlers();
+})();
+</script>
+@endpush
 
 @endsection

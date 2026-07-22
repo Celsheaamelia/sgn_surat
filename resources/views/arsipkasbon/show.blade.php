@@ -103,8 +103,8 @@
 
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb" style="font-family: var(--font-mono); font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;">
-            <li class="breadcrumb-item"><a href="{{ route('arsipkasbon.index') }}" style="color:var(--ink-soft); text-decoration:none;">Arsip SPP</a></li>
-            <li class="breadcrumb-item active" style="color:var(--brass-dark); font-weight:600;">{{ $kasbon->document_no ?? 'Detail' }}</li>
+            {{-- <li class="breadcrumb-item"><a href="{{ route('arsipkasbon.index') }}" style="color:var(--ink-soft); text-decoration:none;">Arsip SPP</a></li> --}}
+            {{-- <li class="breadcrumb-item active" style="color:var(--brass-dark); font-weight:600;">{{ $kasbon->document_no ?? 'Detail' }}</li> --}}
         </ol>
     </nav>
 
