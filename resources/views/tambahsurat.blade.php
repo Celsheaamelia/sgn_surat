@@ -678,6 +678,12 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
+    new Choices('#signatory', {
+        searchEnabled: true,
+        itemSelectText: '',
+        shouldSort: false,
+    });
+
     new Choices('#kode_tujuan', {
         searchEnabled: true,
         itemSelectText: '',
