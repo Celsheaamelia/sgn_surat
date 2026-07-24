@@ -77,7 +77,7 @@ class RiwayatSuratController extends Controller
             'signatory'   => 'required',
             'kode_tujuan' => 'required',
             'klasifikasi' => 'required',
-            'tanggal'     => 'required|date|date_equals:today',
+            'tanggal'     => 'required|date',
             'nomor_urut'  => 'required|integer|min:1',
         ]);
 
