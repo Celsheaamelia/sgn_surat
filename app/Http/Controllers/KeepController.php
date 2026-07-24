@@ -124,7 +124,7 @@ class KeepController extends Controller
 
         return redirect()
             ->route('keepnomorsurat')
-            ->with('success', "{$jumlah} nomor berhasil di-keep.")
+            ->with('success', "{$jumlah} nomor berhasil dicadangkan.")
             ->with('created_numbers', $createdNumbers);
     }
 
@@ -132,7 +132,7 @@ class KeepController extends Controller
     {
         $surat = RiwayatSurat::findOrFail($id);
 
-        if ($surat->status !== 'Direservasi') {
+        if ($surat->status !== 'Dicadangkan') {
             return back()->with('error', 'Nomor ini sudah terpakai dan tidak bisa dibatalkan.');
         }
 
@@ -141,7 +141,7 @@ class KeepController extends Controller
 
         return redirect()
             ->route('keepnomorsurat')
-            ->with('success', "Reservasi nomor {$nomor} berhasil dibatalkan.");
+            ->with('success', "cadangan nomor {$nomor} berhasil dibatalkan.");
     }
 
     public function cekNomorTerpakai(Request $request)

@@ -61,6 +61,9 @@ function simpanSurat(array $data): void
     Route::get('/riwayat-surat', [RiwayatSuratController::class,'index'])
         ->name('riwayatsurat');
 
+    Route::get('/riwayat-surat/export', [RiwayatSuratController::class, 'exportExcel'])
+        ->name('surat.export');
+
     Route::get('/keep-nomor-surat', [KeepController::class, 'keepNomorSurat'])
         ->name('keepnomorsurat');
 
@@ -75,10 +78,10 @@ function simpanSurat(array $data): void
     Route::delete('/keepnomorsurat/{id}/cancel', [KeepController::class, 'cancelKeepNomor'])->name('keepnomorsurat.cancel');
 
     Route::get('/riwayat-surat/{riwayatSurat}', [RiwayatSuratController::class,'show'])
-    ->name('surat.show');
+        ->name('surat.show');
 
     Route::get('/riwayat-surat/{riwayatSurat}/upload', [RiwayatSuratController::class,'uploadForm'])
-    ->name('surat.upload.form');
+        ->name('surat.upload.form');
 
     Route::post('/riwayat-surat/{riwayatSurat}/upload', [RiwayatSuratController::class,'upload'])
         ->name('surat.upload');
@@ -87,10 +90,10 @@ function simpanSurat(array $data): void
     Route::post('/surat/upload/{surat}', [RiwayatSuratController::class, 'storeUpload'])->name('surat.upload.store');
 
     Route::delete('/surat/upload/{surat}', [RiwayatSuratController::class, 'deleteUpload'])
-    ->name('surat.upload.delete');
+        ->name('surat.upload.delete');
 
     Route::get('/surat/next-sequence', [RiwayatSuratController::class, 'getNextSequence'])
-    ->name('surat.next-sequence');
+        ->name('surat.next-sequence');
 
     Route::get('/surat/cek-status-nomor', [RiwayatSuratController::class, 'cekStatusNomor'])->name('surat.cek-status-nomor');
 
@@ -101,7 +104,7 @@ function simpanSurat(array $data): void
         ->name('arsipkasbon.create');
 
     Route::get('/arsip-kasbon/export', [ArsipKasbonController::class, 'export'])
-    ->name('arsipkasbon.export');
+        ->name('arsipkasbon.export');
 
     Route::post('/arsip-kasbon/scan', [ArsipKasbonController::class, 'scan'])
         ->name('arsipkasbon.scan');

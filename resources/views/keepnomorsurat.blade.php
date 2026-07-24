@@ -316,7 +316,7 @@
                         </div>
 
                         <div class="ledger-stamp-box mb-4">
-                            <p class="ledger-stamp-label mb-2">Nomor yang Akan di-Cadangkan</p>
+                            <p class="ledger-stamp-label mb-2">Nomor yang Akan diCadangkan</p>
                             <div class="ledger-preview-list" id="previewList">
                                 <p class="ledger-preview-empty">Isi rentang nomor yang valid.</p>
                             </div>
@@ -377,7 +377,7 @@
                                 <td class="text-end">
                                     <form method="POST"
                                           action="{{ route('keepnomorsurat.cancel', $keep->id) }}"
-                                          onsubmit="return confirm('Batalkan reservasi nomor {{ $keep->nomor_surat }}? Nomor ini akan tersedia lagi untuk yang lain.');"
+                                          onsubmit="return confirm('Batalkan cadangan nomor {{ $keep->nomor_surat }}? Nomor ini akan tersedia lagi untuk yang lain.');"
                                           class="d-inline">
                                         @csrf
                                         @method('DELETE')
@@ -391,7 +391,7 @@
                         @empty
                             <tr>
                                 <td colspan="4" class="text-center py-4 ledger-subtitle">
-                                    Belum ada nomor yang di-keep.
+                                    Belum ada nomor yang di-cadangkan.
                                 </td>
                             </tr>
                         @endforelse
@@ -509,7 +509,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 badge.textContent = 'SUDAH DIPAKAI';
                 badge.classList.add('is-terpakai');
             } else if (isDireservasi) {
-                badge.textContent = 'SUDAH DI-KEEP';
+                badge.textContent = 'SUDAH DICADANGKAN';
                 badge.classList.add('is-direservasi');
             } else {
                 badge.textContent = 'TERSEDIA';
@@ -542,14 +542,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 messages.push(`Sudah dipakai: #${conflictTerpakai.map(pad).join(', #')}`);
             }
             if (conflictDireservasi.length > 0) {
-                messages.push(`Sudah di-keep: #${conflictDireservasi.map(pad).join(', #')}`);
+                messages.push(`Sudah dicadangkan: #${conflictDireservasi.map(pad).join(', #')}`);
             }
 
             statusLine.textContent = messages.join(' · ') + '. Ubah rentang.';
             statusLine.parentElement.querySelector('.ledger-status-dot').style.background = '#b3432f';
             if (submitBtn) submitBtn.disabled = true;
         } else {
-            statusLine.textContent = `Siap keep ${total} nomor (#${pad(awal)} – #${pad(akhir)})`;
+            statusLine.textContent = `Siap cadangkan ${total} nomor (#${pad(awal)} – #${pad(akhir)})`;
             statusLine.parentElement.querySelector('.ledger-status-dot').style.background = 'var(--brass)';
             if (submitBtn) submitBtn.disabled = false;
         }
@@ -583,7 +583,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="mb-3">
                         <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--success);"></i>
                     </div>
-                    <h5 class="ledger-title mb-2" style="font-size: 1.2rem;">Nomor Berhasil Di-keep</h5>
+                    <h5 class="ledger-title mb-2" style="font-size: 1.2rem;">Nomor Berhasil Dicadangkan</h5>
                     <p class="ledger-subtitle mb-1">{{ session('success') }}</p>
                     <div class="mb-0" style="max-height: 220px; overflow-y: auto;">
                         @foreach (session('created_numbers') as $nomorSurat)

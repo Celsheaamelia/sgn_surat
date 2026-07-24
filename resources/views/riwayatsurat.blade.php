@@ -378,6 +378,23 @@
         opacity: 0.7;
     }
 
+    #exportExcelBtn.btn-outline-secondary {
+        border-color: var(--ink);
+        color: var(--ink-soft);
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-radius: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    #exportExcelBtn.btn-outline-secondary:hover {
+        background: var(--ink-soft);
+        border-color: rgba(28,43,35,0.04);
+        color: var(--brass-tint);
+    }
+
     @media (prefers-reduced-motion: reduce) {
         * {
             transition: none !important;
@@ -403,7 +420,10 @@
                     <div>
                         <h2 class="ledger-title mb-1">Riwayat Surat</h2>
                     </div>
-                    <div id="totalCounter">
+                    <div class="d-flex align-items-center gap-2" id="totalCounter">
+                        <a href="#" id="exportExcelBtn" class="btn btn-outline-secondary">
+                            <i class="bi bi-file-earmark-excel"></i> Export Excel
+                        </a>
                         <span class="ledger-badge">
                             <span id="totalCount">{{ $suratList->total() ?? 0 }}</span> surat tercatat
                         </span>
@@ -466,7 +486,7 @@
                             @php
                                 $statusClass = match($surat->status ?? 'Belum Terupload') {
                                     'Terupload'    => 'is-uploaded',
-                                    'Direservasi'  => 'is-reserved',
+                                    'Dicadangkan'  => 'is-reserved',
                                     default        => 'is-pending',
                                 };
                             @endphp
@@ -489,7 +509,7 @@
                                 <td>
                                     <a href="{{ route('surat.upload.show', $surat->id) }}" class="ledger-btn-detail">
                                         <i class="fa-regular fa-eye"></i>
-                                        {{ $surat->status === 'Direservasi' ? 'Detail' : 'Detail' }}
+                                        {{ $surat->status === 'Dicadangkan' ? 'Detail' : 'Detail' }}
                                     </a>
                                 </td>
                             </tr>
@@ -615,6 +635,28 @@
 
     // Nomori baris begitu halaman selesai dimuat.
     renumberVisibleRows();
+
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const params = new URLSearchParams();
+
+            if (searchInput && searchInput.value.trim()) {
+                params.set('search', searchInput.value.trim());
+            }
+            if (filterKlasifikasi && filterKlasifikasi.value) {
+                params.set('klasifikasi', filterKlasifikasi.value);
+            }
+            if (sortOrder && sortOrder.value) {
+                params.set('sort', sortOrder.value);
+            }
+
+            window.location.href = `{{ route('surat.export') }}?${params.toString()}`;
+        });
+    }
 </script>
 
 @endsection

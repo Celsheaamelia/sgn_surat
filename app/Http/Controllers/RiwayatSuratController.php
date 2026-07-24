@@ -10,6 +10,8 @@ use App\Models\KlasifikasiSurat;
 use App\Models\DetailSurat;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use App\Exports\RiwayatSuratExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RiwayatSuratController extends Controller
 {
@@ -77,6 +79,7 @@ class RiwayatSuratController extends Controller
             'signatory'   => 'required',
             'kode_tujuan' => 'required',
             'klasifikasi' => 'required',
+
             'tanggal'     => 'required|date',
             'nomor_urut'  => 'required|integer|min:1',
         ]);
@@ -200,4 +203,18 @@ class RiwayatSuratController extends Controller
             $this->groupedUsedNumbersForDate($request->tanggal)
         );
     }
+
+    public function exportExcel(Request $request)
+{
+    $filename = 'riwayat-surat-' . now()->format('Y-m-d_His') . '.xlsx';
+
+    return Excel::download(
+        new RiwayatSuratExport(
+            $request->query('search'),
+            $request->query('klasifikasi'),
+            $request->query('sort', 'desc')
+        ),
+        $filename
+    );
+}
 }
