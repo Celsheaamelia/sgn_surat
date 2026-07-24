@@ -484,10 +484,16 @@
                         <tbody id="archiveList">
                             @foreach ($suratList as $surat)
                             @php
-                                $statusClass = match($surat->status ?? 'Belum Terupload') {
+                               $statusClass = match($surat->status ?? 'Belum Terupload') {
                                     'Terupload'    => 'is-uploaded',
-                                    'Dicadangkan'  => 'is-reserved',
+                                    'Direservasi'  => 'is-reserved',
                                     default        => 'is-pending',
+                                };
+
+                                $statusLabel = match($surat->status ?? 'Belum Terupload') {
+                                    'Terupload'    => 'Terupload',
+                                    'Direservasi'  => 'Dicadangkan',
+                                    default        => 'Belum Terupload',
                                 };
                             @endphp
                             <tr
@@ -503,13 +509,13 @@
                                 <td class="ledger-tanggal">{{ $surat->tanggal }}</td>
                                 <td>
                                     <span class="ledger-status-pill {{ $statusClass }}">
-                                        {{ $surat->status ?? 'Belum Terupload' }}
+                                        {{ $statusLabel }}
                                     </span>
                                 </td>
                                 <td>
                                     <a href="{{ route('surat.upload.show', $surat->id) }}" class="ledger-btn-detail">
                                         <i class="fa-regular fa-eye"></i>
-                                        {{ $surat->status === 'Dicadangkan' ? 'Detail' : 'Detail' }}
+                                        Detail
                                     </a>
                                 </td>
                             </tr>

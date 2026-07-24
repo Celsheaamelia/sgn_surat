@@ -132,7 +132,7 @@ class KeepController extends Controller
     {
         $surat = RiwayatSurat::findOrFail($id);
 
-        if ($surat->status !== 'Dicadangkan') {
+        if ($surat->status !== 'Direservasi') {
             return back()->with('error', 'Nomor ini sudah terpakai dan tidak bisa dibatalkan.');
         }
 
