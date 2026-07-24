@@ -261,7 +261,7 @@ class ArsipKasbonController extends Controller
             'terbilang'               => 'nullable|string',
             'temp_path'               => 'nullable|string',
             'file_scan'               => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:15360',
-
+    
             'lampiran'                => 'nullable|array',
             'lampiran.*'              => 'file|mimes:jpg,jpeg,png,pdf|max:15360',
 
@@ -394,3 +394,5 @@ class ArsipKasbonController extends Controller
         ]);
     }
 }
+
+
