@@ -39,6 +39,31 @@
         font-size: 0.95rem;
     }
 
+    /* ---- Section wrapper ---- */
+    .dash-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .section-label {
+        font-family: var(--font-mono);
+        font-size: .78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #e3e5ee;
+    }
+
     /* ---- Stat Cards ---- */
     .stat-card {
         border: none;
@@ -82,6 +107,10 @@
         font-size: 2.1rem;
         letter-spacing: -0.01em;
         margin-top: .35rem;
+    }
+
+    .stat-value.is-currency {
+        font-size: 1.45rem;
     }
 
     .icon-orb {
@@ -177,6 +206,8 @@
         font-weight: 600;
         padding: .45rem 1.1rem;
         transition: background .15s ease;
+        display: inline-flex;
+        align-items: center;
     }
 
     .btn-terapkan:hover {
@@ -209,6 +240,8 @@
         transition: background .15s ease;
     }
 
+    .riwayat-item:last-child { border-bottom: none; }
+
     .riwayat-item:hover { background: #f8f9fd; }
 
     .riwayat-dot {
@@ -219,6 +252,8 @@
         flex-shrink: 0;
         background: #0f6b45;
     }
+
+    .riwayat-dot.dot-blue { background: #4f6bff; }
 
     .riwayat-code {
         font-family: var(--font-mono);
@@ -234,6 +269,15 @@
         font-family: var(--font-mono);
         color: var(--muted);
         font-size: .74rem;
+    }
+
+    .riwayat-amount {
+        font-family: var(--font-mono);
+        font-weight: 700;
+        color: var(--ink);
+        font-size: .86rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .riwayat-footer {
@@ -265,6 +309,7 @@
     @media (max-width: 767px) {
         .content-wrap { padding: 1.25rem .9rem; }
         .stat-value { font-size: 1.7rem; }
+        .stat-value.is-currency { font-size: 1.2rem; }
         .date-range-filter { width: 100%; }
     }
 </style>
@@ -274,137 +319,177 @@
     <!-- Header -->
     <div class="page-head mb-4">
         <h3>Dashboard</h3>
-        <p class="mb-0">Ringkasan penggunaan nomor surat</p>
     </div>
 
-    <!-- Statistik -->
-    <div class="row g-4 mb-4">
+    <div class="dash-section">
 
-        <div class="col-md-6 col-xl-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="stat-label">Total Nomor Surat</div>
-                        <div class="stat-value">{{ $totalSurat }}</div>
-                        <div class="stat-trend {{ $trendPersen >= 0 ? 'up' : 'warn' }}">
-                            <i class="bi {{ $trendPersen >= 0 ? 'bi-arrow-up-short' : 'bi-arrow-down-short' }}"></i>
-                            {{ abs($trendPersen) }}% bulan ini
+        <div class="row g-4 mb-4">
+
+            <div class="col-md-6 col-xl-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Total Nomor Surat</div>
+                            <div class="stat-value">{{ $totalSurat }}</div>
+                            <div class="stat-trend {{ $trendPersen >= 0 ? 'up' : 'warn' }}">
+                                <i class="bi {{ $trendPersen >= 0 ? 'bi-arrow-up-short' : 'bi-arrow-down-short' }}"></i>
+                                {{ abs($trendPersen) }}% bulan ini
+                            </div>
                         </div>
-                    </div>
-                    <div class="icon-orb blue">
-                        <i class="bi bi-file-earmark-text"></i>
+                        <div class="icon-orb blue">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Surat Hari Ini</div>
+                            <div class="stat-value">{{ $suratHariIni }}</div>
+                            <div class="stat-trend up">
+                                <i class="bi bi-arrow-up-short"></i> Aktif
+                            </div>
+                        </div>
+                        <div class="icon-orb green">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Sudah Upload</div>
+                            <div class="stat-value">{{ $sudahUpload }}</div>
+                            <div class="stat-trend up">
+                                <i class="bi bi-check2-circle"></i> {{ $persenUpload }}%
+                            </div>
+                        </div>
+                        <div class="icon-orb cyan">
+                            <i class="bi bi-cloud-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Belum Upload</div>
+                            <div class="stat-value">{{ $belumUpload }}</div>
+                            <div class="stat-trend warn">
+                                <i class="bi bi-exclamation-circle"></i> Perlu tindak lanjut
+                            </div>
+                        </div>
+                        <div class="icon-orb amber">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <div class="col-md-6 col-xl-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="stat-label">Surat Hari Ini</div>
-                        <div class="stat-value">{{ $suratHariIni }}</div>
-                        <div class="stat-trend up">
-                            <i class="bi bi-arrow-up-short"></i> Aktif
-                        </div>
-                    </div>
-                    <div class="icon-orb green">
-                        <i class="bi bi-calendar-check"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Grafik & Riwayat Nomor Surat -->
+        <div class="row g-4">
 
-        <div class="col-md-6 col-xl-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="stat-label">Sudah Upload</div>
-                        <div class="stat-value">{{ $sudahUpload }}</div>
-                        <div class="stat-trend up">
-                            <i class="bi bi-check2-circle"></i> {{ $persenUpload }}%
-                        </div>
-                    </div>
-                    <div class="icon-orb cyan">
-                        <i class="bi bi-cloud-check"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <div class="col-lg-8">
+                <div class="card panel-card h-100">
 
-        <div class="col-md-6 col-xl-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="stat-label">Belum Upload</div>
-                        <div class="stat-value">{{ $belumUpload }}</div>
-                        <div class="stat-trend warn">
-                            <i class="bi bi-exclamation-circle"></i> Perlu tindak lanjut
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="panel-title">Grafik Penggunaan Nomor Surat</h5>
+
+                        <div class="date-range-filter">
+                            <input type="date" id="startDate" value="{{ $defaultStart->toDateString() }}">
+                            <span class="date-sep">s/d</span>
+                            <input type="date" id="endDate" value="{{ $defaultEnd->toDateString() }}">
+                            <button type="button" class="btn-terapkan" id="applyDateRange">Terapkan</button>
                         </div>
                     </div>
-                    <div class="icon-orb amber">
-                        <i class="bi bi-clock-history"></i>
+
+                    <div class="card-body">
+                        <div class="date-range-error" id="dateRangeError"></div>
+                        <canvas id="suratChart" height="300"></canvas>
                     </div>
+
                 </div>
             </div>
+
+            <div class="col-lg-4">
+                <div class="card panel-card h-100">
+
+                    <div class="card-header">
+                        <h5 class="panel-title">Riwayat Nomor Surat</h5>
+                    </div>
+
+                    <div class="card-body p-0">
+
+                        @forelse ($riwayatTerbaru as $surat)
+                            <div class="riwayat-item">
+                                <span class="riwayat-dot"></span>
+                                <div>
+                                    <span class="riwayat-code">{{ $surat->nomor_surat }}</span>
+                                    <span class="riwayat-date">
+                                        {{ \Carbon\Carbon::parse($surat->tanggal)->translatedFormat('d F Y') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="riwayat-empty">Belum ada surat yang tercatat.</div>
+                        @endforelse
+
+                        <div class="riwayat-footer">
+                            <a href="{{ route('riwayatsurat') }}">Lihat Semua <i class="bi bi-arrow-right"></i></a>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
         </div>
 
     </div>
 
-    <!-- Grafik & Riwayat -->
+    <!-- Riwayat Arsip SPP -->
     <div class="row g-4">
 
-        <!-- Grafik -->
-        <div class="col-lg-8">
-            <div class="card panel-card h-100">
+        <div class="col-lg-12">
+            <div class="card panel-card">
 
-                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h5 class="panel-title">Grafik Penggunaan Nomor Surat</h5>
-
-                    <div class="date-range-filter">
-                        <input type="date" id="startDate" value="{{ $defaultStart->toDateString() }}">
-                        <span class="date-sep">s/d</span>
-                        <input type="date" id="endDate" value="{{ $defaultEnd->toDateString() }}">
-                        <button type="button" class="btn-terapkan" id="applyDateRange">Terapkan</button>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="date-range-error" id="dateRangeError"></div>
-                    <canvas id="suratChart" height="300"></canvas>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Riwayat -->
-        <div class="col-lg-4">
-            <div class="card panel-card h-100">
-
-                <div class="card-header">
-                    <h5 class="panel-title">Riwayat Nomor Surat</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="panel-title">Riwayat Arsip SPP Terbaru</h5>
+                    <a href="{{ route('arsipkasbon.index') }}" class="btn-terapkan" style="text-decoration:none;">
+                        Lihat Semua
+                    </a>
                 </div>
 
                 <div class="card-body p-0">
-
-                    @forelse ($riwayatTerbaru as $surat)
-                        <div class="riwayat-item">
-                            <span class="riwayat-dot"></span>
-                            <div>
-                                <span class="riwayat-code">{{ $surat->nomor_surat }}</span>
-                                <span class="riwayat-date">
-                                    {{ \Carbon\Carbon::parse($surat->tanggal)->translatedFormat('d F Y') }}
-                                </span>
+                    @forelse ($arsipTerbaru as $arsip)
+                        <div class="riwayat-item d-flex justify-content-between align-items-start">
+                            <div class="d-flex gap-3">
+                                <span class="riwayat-dot dot-blue"></span>
+                                <div>
+                                    <span class="riwayat-code">{{ $arsip->nama_vendor ?? '-' }}</span>
+                                    <span class="riwayat-date">
+                                        {{ $arsip->document_no ?? '-' }} ·
+                                        {{ $arsip->tanggal_transaksi ? \Carbon\Carbon::parse($arsip->tanggal_transaksi)->translatedFormat('d F Y') : '-' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="riwayat-amount">
+                                Rp {{ number_format($arsip->jumlah_total ?? 0, 0, ',', '.') }}
                             </div>
                         </div>
                     @empty
-                        <div class="riwayat-empty">Belum ada surat yang tercatat.</div>
+                        <div class="riwayat-empty">Belum ada arsip SPP yang tercatat.</div>
                     @endforelse
-
-                    <div class="riwayat-footer">
-                        <a href="{{ route('riwayatsurat') }}">Lihat Semua <i class="bi bi-arrow-right"></i></a>
-                    </div>
-
                 </div>
 
             </div>

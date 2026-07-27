@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\RiwayatSurat;
+use App\Models\ArsipKasbon;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+     public function index()
     {
         $totalSurat  = RiwayatSurat::count();
         $suratHariIni = RiwayatSurat::whereDate('tanggal', Carbon::today())->count();
@@ -19,7 +20,6 @@ class DashboardController extends Controller
             ? round(($sudahUpload / $totalSurat) * 100, 1)
             : 0;
 
-        // Tren: total surat bulan ini dibanding bulan lalu
         $totalBulanIni = RiwayatSurat::whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
             ->count();
@@ -33,14 +33,17 @@ class DashboardController extends Controller
             ? round((($totalBulanIni - $totalBulanLalu) / $totalBulanLalu) * 100)
             : ($totalBulanIni > 0 ? 100 : 0);
 
-        // 4 surat terbaru buat panel "Riwayat Nomor Surat"
         $riwayatTerbaru = RiwayatSurat::latest()->take(4)->get();
 
-        // Data awal buat grafik: default 7 hari terakhir.
-        // Rentang custom lainnya diambil lewat AJAX ke endpoint chartRange().
         $defaultEnd = Carbon::today();
         $defaultStart = Carbon::today()->subDays(6);
         $chartData = $this->hitungRentang($defaultStart, $defaultEnd);
+
+        // ================================================================
+        // STATISTIK ARSIP SPP
+        // ================================================================
+        $totalArsip = ArsipKasbon::count();
+        $arsipTerbaru = ArsipKasbon::latest()->take(5)->get();
 
         return view('dashboard', compact(
             'totalSurat',
@@ -52,14 +55,11 @@ class DashboardController extends Controller
             'riwayatTerbaru',
             'chartData',
             'defaultStart',
-            'defaultEnd'
+            'defaultEnd',
+            'arsipTerbaru'
         ));
     }
 
-    /**
-     * Endpoint AJAX: hitung jumlah surat per hari untuk rentang tanggal
-     * yang dipilih admin lewat date picker di dashboard.
-     */
     public function chartRange(Request $request)
     {
         $request->validate([
@@ -79,10 +79,6 @@ class DashboardController extends Controller
         return response()->json($this->hitungRentang($start, $end));
     }
 
-    /**
-     * Hitung jumlah surat per hari, dari $start sampai $end (inklusif).
-     * Dipakai baik untuk data awal (index) maupun endpoint AJAX (chartRange).
-     */
     private function hitungRentang(Carbon $start, Carbon $end): array
     {
         $labels = [];
@@ -97,4 +93,6 @@ class DashboardController extends Controller
 
         return ['labels' => $labels, 'data' => $data];
     }
+
+
 }
