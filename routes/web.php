@@ -52,6 +52,9 @@ function simpanSurat(array $data): void
     Route::get('/dashboard/chart-data', [DashboardController::class, 'chartRange'])
     ->name('dashboard.chart-data');
 
+    Route::get('/dashboard/spp-chart-data', [DashboardController::class, 'chartRangeSpp'])
+    ->name('dashboard.spp-chart-data');
+
     Route::get('/surat/tambah', [RiwayatSuratController::class,'create'])
         ->name('tambahsurat');
 

@@ -6,7 +6,6 @@
             </div>
             <div>
                 <h4>Sistem Surat</h4>
-                <small>Panel Admin</small>
             </div>
         </div>
 
@@ -95,7 +94,7 @@
     <div class="user-profile">
         <div class="avatar">A</div>
         <div class="user-meta">
-            <strong>Administrator</strong>
+            <strong>Admin</strong>
             {{-- <small>Online</small> --}}
         </div>
     </div>

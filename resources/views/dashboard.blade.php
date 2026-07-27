@@ -253,8 +253,6 @@
         background: #0f6b45;
     }
 
-    .riwayat-dot.dot-blue { background: #4f6bff; }
-
     .riwayat-code {
         font-family: var(--font-mono);
         font-weight: 600;
@@ -455,26 +453,43 @@
 
         </div>
 
-    </div>
+        <!-- Grafik & Riwayat Arsip SPP -->
+        <div class="row g-4 mt-4">
 
-    <!-- Riwayat Arsip SPP -->
-    <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card panel-card h-100">
 
-        <div class="col-lg-12">
-            <div class="card panel-card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="panel-title">Grafik Arsip SPP</h5>
 
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="panel-title">Riwayat Arsip SPP Terbaru</h5>
-                    <a href="{{ route('arsipkasbon.index') }}" class="btn-terapkan" style="text-decoration:none;">
-                        Lihat Semua
-                    </a>
+                        <div class="date-range-filter">
+                            <input type="date" id="startDateSpp" value="{{ $defaultStart->toDateString() }}">
+                            <span class="date-sep">s/d</span>
+                            <input type="date" id="endDateSpp" value="{{ $defaultEnd->toDateString() }}">
+                            <button type="button" class="btn-terapkan" id="applyDateRangeSpp">Terapkan</button>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="date-range-error" id="dateRangeErrorSpp"></div>
+                        <canvas id="sppChart" height="300"></canvas>
+                    </div>
+
                 </div>
+            </div>
 
-                <div class="card-body p-0">
-                    @forelse ($arsipTerbaru as $arsip)
-                        <div class="riwayat-item d-flex justify-content-between align-items-start">
-                            <div class="d-flex gap-3">
-                                <span class="riwayat-dot dot-blue"></span>
+            <div class="col-lg-4">
+                <div class="card panel-card h-100">
+
+                    <div class="card-header">
+                        <h5 class="panel-title">Riwayat Arsip SPP</h5>
+                    </div>
+
+                    <div class="card-body p-0">
+
+                        @forelse ($arsipTerbaru as $arsip)
+                            <div class="riwayat-item">
+                                <span class="riwayat-dot"></span>
                                 <div>
                                     <span class="riwayat-code">{{ $arsip->nama_vendor ?? '-' }}</span>
                                     <span class="riwayat-date">
@@ -483,16 +498,19 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="riwayat-amount">
-                                Rp {{ number_format($arsip->jumlah_total ?? 0, 0, ',', '.') }}
-                            </div>
-                        </div>
-                    @empty
-                        <div class="riwayat-empty">Belum ada arsip SPP yang tercatat.</div>
-                    @endforelse
-                </div>
+                        @empty
+                            <div class="riwayat-empty">Belum ada arsip SPP yang tercatat.</div>
+                        @endforelse
 
+                        <div class="riwayat-footer">
+                            <a href="{{ route('arsipkasbon.index') }}">Lihat Semua <i class="bi bi-arrow-right"></i></a>
+                        </div>
+
+                    </div>
+
+                </div>
             </div>
+
         </div>
 
     </div>
@@ -633,4 +651,127 @@ applyBtn.addEventListener('click', () => {
 
 </script>
 
+<script>
+
+const initialChartDataSpp = @json($chartDataSpp);
+const chartDataUrlSpp = "{{ route('dashboard.spp-chart-data') }}";
+
+const ctxSpp = document.getElementById('sppChart');
+
+const gradientSpp = ctxSpp.getContext('2d').createLinearGradient(0, 0, 0, 300);
+gradientSpp.addColorStop(0, 'rgba(15,107,69,.28)');
+gradientSpp.addColorStop(1, 'rgba(15,107,69,0)');
+
+const chartSpp = new Chart(ctxSpp, {
+    type: 'line',
+    data: {
+        labels: initialChartDataSpp.labels,
+        datasets: [{
+            label: 'Arsip SPP',
+            data: initialChartDataSpp.data,
+            borderColor: '#0f6b45',
+            backgroundColor: gradientSpp,
+            fill: true,
+            tension: 0.45,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#0f6b45',
+            pointBorderWidth: 2,
+            borderWidth: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#1a1d29',
+                titleFont: { weight: '600', family: "'Inter', sans-serif" },
+                bodyFont: { family: "'IBM Plex Mono', monospace" },
+                padding: 10,
+                cornerRadius: 10,
+                displayColors: false
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: { color: '#8a8fa3', font: { size: 12, family: "'IBM Plex Mono', monospace" } }
+            },
+            y: {
+                beginAtZero: true,
+                suggestedMax: 5,
+                ticks: {
+                    color: '#8a8fa3',
+                    font: { size: 12, family: "'IBM Plex Mono', monospace" },
+                    stepSize: 1,
+                    precision: 0
+                },
+                grid: { color: '#eef0f6' },
+                border: { display: false }
+            }
+        }
+    }
+});
+
+const startDateInputSpp = document.getElementById('startDateSpp');
+const endDateInputSpp = document.getElementById('endDateSpp');
+const applyBtnSpp = document.getElementById('applyDateRangeSpp');
+const errorBoxSpp = document.getElementById('dateRangeErrorSpp');
+
+function showErrorSpp(message) {
+    errorBoxSpp.textContent = message;
+    errorBoxSpp.style.display = 'block';
+}
+
+function clearErrorSpp() {
+    errorBoxSpp.style.display = 'none';
+    errorBoxSpp.textContent = '';
+}
+
+applyBtnSpp.addEventListener('click', () => {
+    const start = startDateInputSpp.value;
+    const end = endDateInputSpp.value;
+
+    clearErrorSpp();
+
+    if (!start || !end) {
+        showErrorSpp('Pilih tanggal mulai dan tanggal akhir dulu.');
+        return;
+    }
+
+    if (start > end) {
+        showErrorSpp('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+        return;
+    }
+
+    applyBtnSpp.disabled = true;
+    applyBtnSpp.textContent = 'Memuat...';
+
+    fetch(`${chartDataUrlSpp}?start=${start}&end=${end}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Gagal mengambil data.');
+            return res.json();
+        })
+        .then(json => {
+            chartSpp.data.labels = json.labels;
+            chartSpp.data.datasets[0].data = json.data;
+            chartSpp.update();
+        })
+        .catch(() => {
+            showErrorSpp('Gagal memuat data untuk rentang tanggal ini.');
+        })
+        .finally(() => {
+            applyBtnSpp.disabled = false;
+            applyBtnSpp.textContent = 'Terapkan';
+        });
+});
+
+</script>
 @endsection

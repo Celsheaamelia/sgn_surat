@@ -44,6 +44,7 @@ class DashboardController extends Controller
         // ================================================================
         $totalArsip = ArsipKasbon::count();
         $arsipTerbaru = ArsipKasbon::latest()->take(5)->get();
+        $chartDataSpp = $this->hitungRentangSpp($defaultStart, $defaultEnd);
 
         return view('dashboard', compact(
             'totalSurat',
@@ -56,7 +57,8 @@ class DashboardController extends Controller
             'chartData',
             'defaultStart',
             'defaultEnd',
-            'arsipTerbaru'
+            'arsipTerbaru',
+            'chartDataSpp'
         ));
     }
 
@@ -79,6 +81,26 @@ class DashboardController extends Controller
         return response()->json($this->hitungRentang($start, $end));
     }
 
+    // Endpoint baru khusus buat grafik SPP
+    public function chartRangeSpp(Request $request)
+    {
+        $request->validate([
+            'start' => 'required|date',
+            'end'   => 'required|date|after_or_equal:start',
+        ]);
+
+        $start = Carbon::parse($request->start)->startOfDay();
+        $end   = Carbon::parse($request->end)->startOfDay();
+
+        if ($start->diffInDays($end) > 366) {
+            return response()->json([
+                'message' => 'Rentang tanggal maksimal 1 tahun.',
+            ], 422);
+        }
+
+        return response()->json($this->hitungRentangSpp($start, $end));
+    }
+
     private function hitungRentang(Carbon $start, Carbon $end): array
     {
         $labels = [];
@@ -88,6 +110,21 @@ class DashboardController extends Controller
         while ($current->lte($end)) {
             $labels[] = $current->translatedFormat('d M');
             $data[] = RiwayatSurat::whereDate('tanggal', $current->toDateString())->count();
+            $current->addDay();
+        }
+
+        return ['labels' => $labels, 'data' => $data];
+    }
+
+    private function hitungRentangSpp(Carbon $start, Carbon $end): array
+    {
+        $labels = [];
+        $data = [];
+
+        $current = $start->copy();
+        while ($current->lte($end)) {
+            $labels[] = $current->translatedFormat('d M');
+            $data[] = ArsipKasbon::whereDate('tanggal_transaksi', $current->toDateString())->count();
             $current->addDay();
         }
 
