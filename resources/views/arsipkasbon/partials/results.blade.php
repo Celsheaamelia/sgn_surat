@@ -54,6 +54,9 @@
                             <div>
                                 <div class="vendor-name">{!! highlightArsipMatch($kasbon->nama_vendor ?? 'Vendor tidak diketahui', request('q')) !!}</div>
                                 <div class="vendor-doc">{!! highlightArsipMatch($kasbon->document_no ?? '—', request('q')) !!}</div>
+                                @if($kasbon->numerator)
+                                    <div class="vendor-doc" style="color: var(--ink-faint);">No. {!! highlightArsipMatch($kasbon->numerator, request('q')) !!}</div>
+                                @endif
                             </div>
                         </div>
                     </td>

@@ -6,6 +6,13 @@ use Illuminate\Support\Facades\Log;
 
 class KasbonOcrService
 {
+    /** Urutan field header yang dipakai bareng di beberapa method di bawah. */
+    private const HEADER_FIELDS = [
+        'tanggal_transaksi', 'document_no', 'numerator', 'park_oleh', 'nama_vendor',
+        'kode_vendor', 'cek_giro_trx', 'deskripsi_cost_object',
+        'jumlah_total', 'terbilang',
+    ];
+
     public function __construct(protected GeminiService $gemini)
     {
     }
@@ -54,10 +61,17 @@ Kamu membaca gambar formulir "Surat Permintaan Pembayaran" (SPP) / kasbon berbah
 
 Panduan membaca tiap field:
 - tanggal_transaksi: format asli biasanya dd.mm.yyyy atau dd/mm/yyyy -- konversi ke YYYY-MM-DD.
-- document_no: nomor dokumen SPP.
+- document_no: nomor dokumen SAP di kanan atas, biasanya di sebelah label "Document No", angka panjang
+    sekitar 10 digit (contoh: 1900031757).
+- numerator: nomor urut CETAK/CAP MESIN yang letaknya di bagian ATAS TENGAH kertas, biasanya format
+    campuran huruf+angka atau angka sekitar 6-8 karakter, dicetak dengan font mesin ketik/dot-matrix
+    (contoh: 2407009). Ini BUKAN document_no dan BUKAN Posting Oleh/Park Oleh -- ini nomor urut arsip
+    fisik yang biasanya berdiri sendiri, terpisah dari blok "Tanggal Transaksi / Document No / Posting
+    Oleh / Park Oleh" di kanan atas. Kalau ragu antara numerator dan document_no, numerator adalah yang
+    posisinya paling atas/tengah dan document_no adalah yang ada label "Document No" di sampingnya.
 - park_oleh: nama petugas yang membuat/park dokumen. Kalau tidak ada, isi "Administrator".
 - nama_vendor, kode_vendor: identitas vendor/penerima pembayaran.
-- cek_giro_trx: nomor Cek/Giro/Transaksi bank.
+- cek_giro_trx: nomor Cek/Giro/Trx bank.
 - deskripsi_cost_object: uraian peruntukan dana / cost object.
 - jumlah_total: total nilai uang, angka murni tanpa titik/koma pemisah ribuan.
 - terbilang: kalimat pembilang nominal total (contoh: "Satu Juta Rupiah").
@@ -90,6 +104,7 @@ PROMPT;
                     'properties' => [
                         'tanggal_transaksi'      => $stringField,
                         'document_no'            => $stringField,
+                        'numerator'               => $stringField,
                         'park_oleh'               => $stringField,
                         'nama_vendor'             => $stringField,
                         'kode_vendor'             => $stringField,
@@ -99,7 +114,7 @@ PROMPT;
                         'terbilang'               => $stringField,
                     ],
                     'required' => [
-                        'tanggal_transaksi', 'document_no', 'park_oleh', 'nama_vendor',
+                        'tanggal_transaksi', 'document_no', 'numerator', 'park_oleh', 'nama_vendor',
                         'kode_vendor', 'cek_giro_trx', 'deskripsi_cost_object',
                         'jumlah_total', 'terbilang',
                     ],
@@ -125,14 +140,8 @@ PROMPT;
 
     private function normalizeHeader(array $h): array
     {
-        $fields = [
-            'tanggal_transaksi', 'document_no', 'park_oleh', 'nama_vendor',
-            'kode_vendor', 'cek_giro_trx', 'deskripsi_cost_object',
-            'jumlah_total', 'terbilang',
-        ];
-
         $result = [];
-        foreach ($fields as $f) {
+        foreach (self::HEADER_FIELDS as $f) {
             $val = $h[$f] ?? null;
             $result[$f] = ($val === '' || $val === null) ? null : $val;
         }
@@ -143,6 +152,11 @@ PROMPT;
 
         if (!empty($result['tanggal_transaksi']) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $result['tanggal_transaksi'])) {
             $result['tanggal_transaksi'] = null;
+        }
+
+        // Numerator kadang kebaca dengan spasi nyasar (mis. "24 07009") -- rapikan.
+        if (!empty($result['numerator'])) {
+            $result['numerator'] = trim(preg_replace('/\s+/', '', $result['numerator']));
         }
 
         return $result;
@@ -191,12 +205,8 @@ PROMPT;
     {
         return [
             'raw_text' => '',
-            'header'   => array_fill_keys([
-                'tanggal_transaksi', 'document_no', 'park_oleh', 'nama_vendor',
-                'kode_vendor', 'cek_giro_trx', 'deskripsi_cost_object',
-                'jumlah_total', 'terbilang',
-            ], null),
-            'items' => [],
+            'header'   => array_fill_keys(self::HEADER_FIELDS, null),
+            'items'    => [],
         ];
     }
 }

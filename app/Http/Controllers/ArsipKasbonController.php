@@ -47,6 +47,7 @@ class ArsipKasbonController extends Controller
 
             $query->where(function ($sub) use ($keyword) {
                 $sub->where('document_no', 'like', "%{$keyword}%")
+                    ->orWhere('numerator', 'like', "%{$keyword}%")
                     ->orWhere('nama_vendor', 'like', "%{$keyword}%")
                     ->orWhere('kode_vendor', 'like', "%{$keyword}%")
                     ->orWhere('park_oleh', 'like', "%{$keyword}%")
@@ -252,6 +253,7 @@ class ArsipKasbonController extends Controller
                     }
                 }),
             ],
+            'numerator'               => 'nullable|string|max:50',
             'park_oleh'               => 'nullable|string|max:100',
             'nama_vendor'             => 'nullable|string|max:150',
             'kode_vendor'             => 'nullable|string|max:50',
@@ -314,6 +316,7 @@ class ArsipKasbonController extends Controller
             $kasbon = ArsipKasbon::create([
                 'tanggal_transaksi'     => $validated['tanggal_transaksi'] ?? null,
                 'document_no'           => $validated['document_no'] ?? null,
+                'numerator'             => $validated['numerator'] ?? null,
                 'park_oleh'             => $validated['park_oleh'] ?? null,
                 'nama_vendor'           => $validated['nama_vendor'] ?? null,
                 'kode_vendor'           => $validated['kode_vendor'] ?? null,
@@ -394,5 +397,3 @@ class ArsipKasbonController extends Controller
         ]);
     }
 }
-
-
