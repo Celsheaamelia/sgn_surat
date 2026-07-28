@@ -59,6 +59,48 @@
                 </div>
             </li>
 
+            @php
+                $manajemenKontrakActive = request()->routeIs('kontrak.*') || request()->routeIs('karyawan.*');
+            @endphp
+            <li class="nav-group">
+                <a href="#manajemenKontrakMenu"
+                   class="nav-link nav-link-parent {{ $manajemenKontrakActive ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   role="button"
+                   aria-expanded="{{ $manajemenKontrakActive ? 'true' : 'false' }}"
+                   aria-controls="manajemenKontrakMenu">
+                    <i class="bi bi-file-earmark-ruled"></i>
+                    <span>Manajemen Kontrak</span>
+                    <i class="bi bi-chevron-down nav-caret"></i>
+                </a>
+
+                <div class="collapse {{ $manajemenKontrakActive ? 'show' : '' }}" id="manajemenKontrakMenu">
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="{{ route('kontrak.create') }}"
+                               class="nav-sublink {{ request()->routeIs('kontrak.create') || request()->routeIs('kontrak.store') ? 'active' : '' }}">
+                                <i class="bi bi-file-earmark-plus"></i>
+                                <span>Buat Kontrak</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('kontrak.index') }}"
+                               class="nav-sublink {{ request()->routeIs('kontrak.index') || request()->routeIs('kontrak.show') || request()->routeIs('kontrak.upload.form') ? 'active' : '' }}">
+                                <i class="bi bi-folder2-open"></i>
+                                <span>Riwayat Kontrak</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('karyawan.index') }}"
+                               class="nav-sublink {{ request()->routeIs('karyawan.*') ? 'active' : '' }}">
+                                <i class="bi bi-people"></i>
+                                <span>Data Karyawan</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
             <li>
                 <a href="#arsipSppSubmenu" data-bs-toggle="collapse" role="button"
                    aria-expanded="{{ request()->routeIs('arsipkasbon.*') ? 'true' : 'false' }}"

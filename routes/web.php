@@ -11,6 +11,9 @@ use App\Http\Controllers\KeepController;
 use App\Http\Controllers\ArsipKasbonController;
 use App\Services\GeminiService;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\KaryawanController;
+use App\Http\Controllers\KontrakController;
+use App\Http\Controllers\NomorKontrakUrut;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -126,6 +129,29 @@ function simpanSurat(array $data): void
 
     Route::get('/arsip-kasbon-api/check-document', [ArsipKasbonController::class, 'checkDocumentNo'])
         ->name('arsipkasbon.check-document');
+
+        // Data Karyawan
+    Route::get('/karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');
+    Route::get('/karyawan/tambah', [KaryawanController::class, 'create'])->name('karyawan.create');
+    Route::post('/karyawan', [KaryawanController::class, 'store'])->name('karyawan.store');
+    Route::get('/karyawan/{karyawan}/edit', [KaryawanController::class, 'edit'])->name('karyawan.edit');
+    Route::put('/karyawan/{karyawan}', [KaryawanController::class, 'update'])->name('karyawan.update');
+    Route::delete('/karyawan/{karyawan}', [KaryawanController::class, 'destroy'])->name('karyawan.destroy');
+    Route::get('/karyawan-api/search', [KaryawanController::class, 'search'])->name('karyawan.search');
+
+    // Manajemen Kontrak
+    Route::get('/kontrak', [KontrakController::class, 'index'])->name('kontrak.index');
+    Route::get('/kontrak/tambah', [KontrakController::class, 'create'])->name('kontrak.create');
+    Route::post('/kontrak', [KontrakController::class, 'store'])->name('kontrak.store');
+    Route::get('/kontrak/next-sequence', [KontrakController::class, 'getNextSequence'])->name('kontrak.next-sequence');
+    Route::get('/kontrak/cek-status-nomor', [KontrakController::class, 'cekStatusNomor'])->name('kontrak.cek-status-nomor');
+    Route::get('/kontrak/{kontrak}', [KontrakController::class, 'show'])->name('kontrak.show');
+    Route::get('/kontrak/{kontrak}/download', [KontrakController::class, 'download'])->name('kontrak.download');
+    Route::post('/kontrak/{kontrak}/regenerate', [KontrakController::class, 'regenerate'])->name('kontrak.regenerate');
+    Route::get('/kontrak/{kontrak}/upload', [KontrakController::class, 'uploadSignedForm'])->name('kontrak.upload.form');
+    Route::post('/kontrak/{kontrak}/upload', [KontrakController::class, 'uploadSigned'])->name('kontrak.upload.store');
+    Route::delete('/kontrak/{kontrak}/upload', [KontrakController::class, 'deleteSigned'])->name('kontrak.upload.delete');
+    Route::delete('/kontrak/{kontrak}', [KontrakController::class, 'destroy'])->name('kontrak.destroy');
 
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');
