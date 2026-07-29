@@ -36,7 +36,29 @@
                             <dd class="col-sm-8">{{ $kontrak->karyawan->nama }} ({{ $kontrak->karyawan->nik }})</dd>
 
                             <dt class="col-sm-4 ledger-subtitle">Jabatan</dt>
-                            <dd class="col-sm-8">{{ $kontrak->karyawan->jabatan ?? '-' }}</dd>
+                            <dd class="col-sm-8">{{ $kontrak->jabatan_kontrak ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Bagian / Departemen</dt>
+                            <dd class="col-sm-8">{{ $kontrak->bagian_kontrak ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Rincian Pekerjaan</dt>
+                            <dd class="col-sm-8">
+                                @if ($kontrak->rincian_pekerjaan_1 || $kontrak->rincian_pekerjaan_2 || $kontrak->rincian_pekerjaan_3)
+                                    <ol class="mb-0 ps-3">
+                                        @if ($kontrak->rincian_pekerjaan_1)
+                                            <li>{{ $kontrak->rincian_pekerjaan_1 }}</li>
+                                        @endif
+                                        @if ($kontrak->rincian_pekerjaan_2)
+                                            <li>{{ $kontrak->rincian_pekerjaan_2 }}</li>
+                                        @endif
+                                        @if ($kontrak->rincian_pekerjaan_3)
+                                            <li>{{ $kontrak->rincian_pekerjaan_3 }}</li>
+                                        @endif
+                                    </ol>
+                                @else
+                                    -
+                                @endif
+                            </dd>
 
                             <dt class="col-sm-4 ledger-subtitle">Jenis Kontrak</dt>
                             <dd class="col-sm-8">{{ $kontrak->jenisKontrak->nama_jenis }}</dd>
@@ -51,14 +73,8 @@
                                 {{ $kontrak->tanggal_selesai ? $kontrak->tanggal_selesai->format('d F Y') : 'Tidak ditentukan (tetap)' }}
                             </dd>
 
-                            <dt class="col-sm-4 ledger-subtitle">Gaji Pokok</dt>
-                            <dd class="col-sm-8">{{ $kontrak->gaji_pokok ? 'Rp ' . number_format($kontrak->gaji_pokok, 0, ',', '.') : '-' }}</dd>
-
-                            <dt class="col-sm-4 ledger-subtitle">Catatan</dt>
-                            <dd class="col-sm-8">{{ $kontrak->catatan ?: '-' }}</dd>
-
-                            <dt class="col-sm-4 ledger-subtitle">Dibuat oleh</dt>
-                            <dd class="col-sm-8">{{ $kontrak->user->name ?? '-' }} &middot; {{ $kontrak->created_at->format('d/m/Y H:i') }}</dd>
+                            <dt class="col-sm-4 ledger-subtitle">Tanggal Dibuat</dt>
+                            <dd class="col-sm-8">{{ $kontrak->created_at->format('d/m/Y H:i') }}</dd>
                         </dl>
                     </div>
                 </div>

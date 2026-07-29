@@ -20,9 +20,22 @@ use RuntimeException;
  *   placeholder kena potong di tengah, replace text biasa akan gagal.
  *   Service ini menggabungkan semua run dalam satu paragraf jadi satu teks
  *   dulu sebelum mencari & mengganti placeholder, baru ditulis ulang.
+ *
+ * Kenapa tab (<w:tab/>) ditangani khusus?
+ *   Tab di Word BUKAN karakter '\t' di dalam <w:t>, tapi elemen XML
+ *   terpisah <w:tab/> yang berdiri sendiri di antara run. Kalau cuma
+ *   menggabung <w:t> tanpa memperhitungkan <w:tab/>, tab-nya hilang dari
+ *   teks gabungan dan alignment kolom (mis. "Nama :  Budi") jadi berantakan
+ *   begitu paragraf ditulis ulang. Di sini <w:tab/> direpresentasikan
+ *   sebagai karakter "\t" waktu digabung, dan saat ditulis ulang, paragraf
+ *   dibongkar total lalu dibangun ulang: teks dipecah per "\t", diselingi
+ *   elemen <w:tab/> ASLI lagi (bukan karakter tab biasa) supaya Word tetap
+ *   mengenalinya sebagai tab kolom.
  */
 class DocxTemplateService
 {
+    private const NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
     /**
      * @param  string $templatePath  Path absolut ke file .docx template
      * @param  array<string,string> $data  key => value, key TANPA kurung kurawal
@@ -117,31 +130,48 @@ class DocxTemplateService
             return $xml;
         }
 
-        $ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-        $paragraphs = $dom->getElementsByTagNameNS($ns, 'p');
+        $paragraphs = $dom->getElementsByTagNameNS(self::NS, 'p');
 
-        foreach ($paragraphs as $paragraph) {
-            $this->mergeAndReplaceInParagraph($paragraph, $ns, $data);
+        // Kumpulkan dulu ke array biasa - paragraphs akan dimodifikasi
+        // (run dihapus & ditambah lagi) selagi di-loop, NodeList live query
+        // bisa kacau kalau di-iterate langsung sambil diubah.
+        foreach (iterator_to_array($paragraphs) as $paragraph) {
+            $this->mergeAndReplaceInParagraph($paragraph, $data);
         }
 
         return $dom->saveXML();
     }
 
-    private function mergeAndReplaceInParagraph($paragraph, string $ns, array $data): void
+    private function mergeAndReplaceInParagraph($paragraph, array $data): void
     {
-        $textNodes = $paragraph->getElementsByTagNameNS($ns, 't');
+        $runs = $paragraph->getElementsByTagNameNS(self::NS, 'r');
 
-        if ($textNodes->length === 0) {
+        if ($runs->length === 0) {
             return;
         }
 
+        $runList = iterator_to_array($runs);
+
+        // Gabungkan teks paragraf, TERMASUK tab (<w:tab/> -> "\t") dan baris
+        // baru (<w:br/> -> "\n"), supaya alignment tidak hilang waktu digabung.
         $fullText = '';
-        foreach ($textNodes as $node) {
-            $fullText .= $node->textContent;
+        foreach ($runList as $run) {
+            foreach ($run->childNodes as $child) {
+                if ($child->nodeType !== XML_ELEMENT_NODE) {
+                    continue;
+                }
+                if ($child->localName === 't') {
+                    $fullText .= $child->textContent;
+                } elseif ($child->localName === 'tab') {
+                    $fullText .= "\t";
+                } elseif ($child->localName === 'br' || $child->localName === 'cr') {
+                    $fullText .= "\n";
+                }
+            }
         }
 
         if (strpos($fullText, '{{') === false) {
-            return; // tidak ada placeholder di paragraf ini, skip
+            return; // tidak ada placeholder di paragraf ini, biarkan apa adanya
         }
 
         $replaced = preg_replace_callback('/\{\{\s*([A-Z0-9_]+)\s*\}\}/', function ($m) use ($data) {
@@ -149,16 +179,70 @@ class DocxTemplateService
             return array_key_exists($key, $data) ? (string) $data[$key] : $m[0];
         }, $fullText);
 
-        // Taruh semua teks hasil replace ke node pertama, kosongkan sisanya
-        $first = true;
-        foreach ($textNodes as $node) {
-            if ($first) {
-                $node->textContent = $replaced;
-                // Jaga spasi di awal/akhir supaya tidak hilang saat dirender Word
-                $node->setAttribute('xml:space', 'preserve');
-                $first = false;
-            } else {
-                $node->textContent = '';
+        // Ambil format (rPr) dari run pertama yang punya rPr, supaya font/bold
+        // dsb tetap konsisten di run-run baru. Highlight (kuning, dsb) SENGAJA
+        // dibuang dari format yang dipakai ulang - itu cuma penanda "isi di sini"
+        // di draft, bukan bagian dari dokumen final.
+        $templateRPr = null;
+        foreach ($runList as $run) {
+            foreach ($run->childNodes as $child) {
+                if ($child->nodeType === XML_ELEMENT_NODE && $child->localName === 'rPr') {
+                    $templateRPr = $child->cloneNode(true);
+                    break 2;
+                }
+            }
+        }
+        if ($templateRPr !== null) {
+            foreach (iterator_to_array($templateRPr->getElementsByTagNameNS(self::NS, 'highlight')) as $hl) {
+                $hl->parentNode->removeChild($hl);
+            }
+        }
+
+        $dom = $paragraph->ownerDocument;
+
+        // Hapus semua run lama di paragraf ini
+        foreach ($runList as $run) {
+            $run->parentNode->removeChild($run);
+        }
+
+        // Bangun ulang: pecah per baris ("\n") lalu per kolom ("\t"), selingi
+        // run teks baru dengan elemen <w:tab/> / <w:br/> ASLI Word.
+        $lines = explode("\n", $replaced);
+
+        foreach ($lines as $lineIndex => $line) {
+            if ($lineIndex > 0) {
+                $brRun = $dom->createElementNS(self::NS, 'w:r');
+                if ($templateRPr) {
+                    $brRun->appendChild($templateRPr->cloneNode(true));
+                }
+                $brRun->appendChild($dom->createElementNS(self::NS, 'w:br'));
+                $paragraph->appendChild($brRun);
+            }
+
+            $parts = explode("\t", $line);
+            $lastIndex = count($parts) - 1;
+
+            foreach ($parts as $partIndex => $part) {
+                if ($part !== '') {
+                    $run = $dom->createElementNS(self::NS, 'w:r');
+                    if ($templateRPr) {
+                        $run->appendChild($templateRPr->cloneNode(true));
+                    }
+                    $t = $dom->createElementNS(self::NS, 'w:t');
+                    $t->appendChild($dom->createTextNode($part));
+                    $t->setAttribute('xml:space', 'preserve');
+                    $run->appendChild($t);
+                    $paragraph->appendChild($run);
+                }
+
+                if ($partIndex < $lastIndex) {
+                    $tabRun = $dom->createElementNS(self::NS, 'w:r');
+                    if ($templateRPr) {
+                        $tabRun->appendChild($templateRPr->cloneNode(true));
+                    }
+                    $tabRun->appendChild($dom->createElementNS(self::NS, 'w:tab'));
+                    $paragraph->appendChild($tabRun);
+                }
             }
         }
     }
@@ -174,12 +258,11 @@ class DocxTemplateService
             return '';
         }
 
-        $ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-        $paragraphs = $dom->getElementsByTagNameNS($ns, 'p');
+        $paragraphs = $dom->getElementsByTagNameNS(self::NS, 'p');
 
         $out = [];
         foreach ($paragraphs as $paragraph) {
-            $textNodes = $paragraph->getElementsByTagNameNS($ns, 't');
+            $textNodes = $paragraph->getElementsByTagNameNS(self::NS, 't');
             $line = '';
             foreach ($textNodes as $node) {
                 $line .= $node->textContent;
