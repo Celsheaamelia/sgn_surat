@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('departemen', 100)->nullable();
             $table->string('tempat_lahir', 100)->nullable();
             $table->date('tanggal_lahir')->nullable();
-            $table->enum('jenis_kelamin', ['Laki - laki', 'Perempuan'])->nullable();
+            $table->enum('jenis_kelamin', ['Laki - Laki', 'Perempuan'])->nullable();
             $table->string('agama', 30)->nullable();
             $table->string('status_perkawinan', 30)->nullable();
             $table->text('alamat')->nullable();

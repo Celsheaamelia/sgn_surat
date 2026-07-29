@@ -2,7 +2,7 @@
 
 @section('content')
 
-@include('kontrak.partials.ledger-styles')
+@include('partials.ledger-styles')
 
 <div class="ledger-page">
     <div class="container-fluid py-1 py-md-2">

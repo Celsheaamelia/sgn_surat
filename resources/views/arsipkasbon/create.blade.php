@@ -231,6 +231,10 @@
                         <input type="text" name="document_no" id="f_document_no" class="form-control @error('document_no') is-duplicate @enderror" value="{{ old('document_no') }}">
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label-sm">Numerator</label>
+                        <input type="text" name="numerator" id="f_numerator" class="form-control" value="{{ old('numerator') }}" placeholder="Nomor cap, mis. 2407009">
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label-sm">Park Oleh</label>
                         <input type="text" name="park_oleh" id="f_park_oleh" class="form-control" value="{{ old('park_oleh') }}">
                     </div>
@@ -588,6 +592,7 @@
             const h = res.header || {};
             document.getElementById('f_tanggal_transaksi').value = h.tanggal_transaksi || '';
             document.getElementById('f_document_no').value = h.document_no || '';
+            document.getElementById('f_numerator').value = h.numerator || '';
             document.getElementById('f_park_oleh').value = h.park_oleh || '';
             document.getElementById('f_nama_vendor').value = h.nama_vendor || '';
             document.getElementById('f_kode_vendor').value = h.kode_vendor || '';

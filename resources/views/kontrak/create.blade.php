@@ -61,7 +61,7 @@
                                 </div>
                             </div>
 
-                            <div class="row g-3 mb-3">
+                            <div class="row g-3 mb-1">
                                 <div class="col-md-6">
                                     <label for="jenis_kontrak_id" class="form-label">Jenis Kontrak <span class="ledger-required">*</span></label>
                                     <select name="jenis_kontrak_id" id="jenis_kontrak_id" required class="form-select">
@@ -70,42 +70,52 @@
                                             <option value="{{ $jenis->id }}"
                                                     data-kode="{{ $jenis->kode }}"
                                                     data-kode-nomor="{{ $jenis->kode_nomor ?? $jenis->kode }}"
+                                                    data-label="{{ $jenis->nama_singkat ?: $jenis->nama_jenis }}"
                                                     data-masa="{{ $jenis->masa_berlaku_bulan }}"
+                                                    data-masa-giling="{{ $jenis->masa_giling ? '1' : '0' }}"
                                                     @selected(old('jenis_kontrak_id') == $jenis->id)>
-                                                {{ $jenis->nama_jenis }} ({{ $jenis->kode_nomor ?? $jenis->kode }})
+                                                {{ $jenis->kode_nomor ?? $jenis->kode }} — {{ $jenis->nama_singkat ?: $jenis->nama_jenis }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="penandatangan_id" class="form-label">Penandatangan (opsional)</label>
-                                    <select name="penandatangan_id" id="penandatangan_id" class="form-select">
-                                        <option value="">Pilih Penandatangan</option>
-                                        @foreach ($penandatanganList as $p)
-                                            <option value="{{ $p->id }}" data-kode="{{ $p->kode }}" @selected(old('penandatangan_id') == $p->id)>
-                                                {{ $p->jabatan }} ({{ $p->kode }})
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <label for="nomorUrut" class="form-label">Nomor Urut <span class="ledger-required">*</span></label>
+                                    <input id="nomorUrut" name="nomor_urut" type="number" min="1"
+                                           value="{{ old('nomor_urut', $nextSequence) }}" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="ledger-help" id="nomorUrutHelp">
+                                    Nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }} tersedia paling awal untuk tanggal ini.
+                                    Ditandatangani oleh <strong>{{ $penandatangan->jabatan ?? 'Manajemen SG26' }}</strong> (otomatis).
                                 </div>
                             </div>
 
                             <div class="row g-3 mb-3">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="tanggal" class="form-label">Tanggal Kontrak <span class="ledger-required">*</span></label>
                                     <input type="date" name="tanggal" id="tanggal" required
                                            value="{{ old('tanggal', date('Y-m-d')) }}" class="form-control">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="tanggal_mulai" class="form-label">Mulai Berlaku <span class="ledger-required">*</span></label>
                                     <input type="date" name="tanggal_mulai" id="tanggal_mulai" required
                                            value="{{ old('tanggal_mulai', date('Y-m-d')) }}" class="form-control">
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="tanggal_selesai" class="form-label">Selesai (opsional)</label>
-                                    <input type="date" name="tanggal_selesai" id="tanggal_selesai"
-                                           value="{{ old('tanggal_selesai') }}" class="form-control">
-                                    <div class="ledger-help" id="tanggalSelesaiHelp">Dikosongkan = dihitung otomatis dari masa berlaku jenis kontrak.</div>
+                            </div>
+
+                            {{-- Tanggal Selesai: cuma muncul kalau jenis kontraknya BUKAN masa giling.
+                                 Untuk masa giling (PJJ/DMG), selesainya otomatis "sampai berakhirnya
+                                 Masa Giling" - tidak ada tanggal tetap yang bisa diisi manual. --}}
+                            <div class="mb-3" id="tanggalSelesaiWrap">
+                                <label for="tanggal_selesai" class="form-label" id="tanggalSelesaiLabel">
+                                    Tanggal Selesai <span class="ledger-required">*</span>
+                                </label>
+                                <input type="date" name="tanggal_selesai" id="tanggal_selesai"
+                                       value="{{ old('tanggal_selesai') }}" class="form-control">
+                                <div class="ledger-help d-none" id="masaGilingNote">
+                                    Otomatis: <strong>sampai dengan ditetapkan tanggal berakhirnya Masa Giling</strong> — tidak perlu diisi tanggal tetap.
                                 </div>
                             </div>
 
@@ -113,12 +123,12 @@
                                 <div class="col-md-6">
                                     <label for="jabatan_kontrak" class="form-label">Jabatan (di kontrak ini)</label>
                                     <input type="text" name="jabatan_kontrak" id="jabatan_kontrak"
-                                           value="{{ old('jabatan_kontrak') }}" class="form-control" placeholder="Terisi otomatis dari data karyawan, bisa diubah">
+                                           value="{{ old('jabatan_kontrak') }}" class="form-control" placeholder="cth: Operator Mesin">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="bagian_kontrak" class="form-label">Bagian / Departemen (di kontrak ini)</label>
                                     <input type="text" name="bagian_kontrak" id="bagian_kontrak"
-                                           value="{{ old('bagian_kontrak') }}" class="form-control" placeholder="Terisi otomatis dari data karyawan, bisa diubah">
+                                           value="{{ old('bagian_kontrak') }}" class="form-control" placeholder="cth: Instalasi">
                                 </div>
                             </div>
 
@@ -127,27 +137,6 @@
                                 <input type="text" name="rincian_pekerjaan_1" value="{{ old('rincian_pekerjaan_1') }}" class="form-control mb-2" placeholder="a. ...">
                                 <input type="text" name="rincian_pekerjaan_2" value="{{ old('rincian_pekerjaan_2') }}" class="form-control mb-2" placeholder="b. ...">
                                 <input type="text" name="rincian_pekerjaan_3" value="{{ old('rincian_pekerjaan_3') }}" class="form-control" placeholder="c. ...">
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label for="gaji_pokok" class="form-label">Gaji Pokok (Rp)</label>
-                                    <input type="number" name="gaji_pokok" id="gaji_pokok" min="0" step="1000"
-                                           value="{{ old('gaji_pokok') }}" class="form-control" placeholder="cth: 5000000">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="nomorUrut" class="form-label">Nomor Urut <span class="ledger-required">*</span></label>
-                                    <input id="nomorUrut" name="nomor_urut" type="number" min="1"
-                                           value="{{ old('nomor_urut', $nextSequence) }}" class="form-control" required>
-                                    <div class="ledger-help" id="nomorUrutHelp">
-                                        Nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }} tersedia paling awal untuk tanggal ini.
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="catatan" class="form-label">Catatan (opsional)</label>
-                                <textarea name="catatan" id="catatan" rows="2" class="form-control">{{ old('catatan') }}</textarea>
                             </div>
 
                             <div class="d-flex align-items-center justify-content-end gap-3">
@@ -173,7 +162,6 @@
 
                         <div class="ledger-stamp-box mb-4">
                             <p class="ledger-stamp-label mb-1">Nomor Kontrak</p>
-                            {{-- Format: PREFIX-KODE_NOMOR/YYYYMMDD.SEQ --}}
                             <p class="mb-0" id="previewNumber">{{ config('kontrak.prefix', 'SG26-PERSE') }}-.--------.{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}</p>
                         </div>
 
@@ -187,7 +175,7 @@
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="ledger-stamp-key">Penandatangan</span>
-                            <span class="ledger-stamp-value" id="previewTtd">-</span>
+                            <span class="ledger-stamp-value">{{ $penandatangan->jabatan ?? '-' }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="ledger-stamp-key">Tanggal</span>
@@ -242,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
         resultsBox.innerHTML = list.map(k => `
             <div class="karyawan-search-item" data-item='${JSON.stringify(k).replace(/'/g, "&apos;")}'>
                 <div>${k.nama}</div>
-                <div class="nik">${k.nik} ${k.jabatan ? '· ' + k.jabatan : ''}</div>
+                <div class="nik">${k.nik} ${k.no_ktp ? '· KTP ' + k.no_ktp : ''}</div>
             </div>
         `).join('');
         resultsBox.classList.add('show');
@@ -258,26 +246,23 @@ document.addEventListener('DOMContentLoaded', function () {
     function selectKaryawan(k) {
         karyawanIdInput.value = k.id;
         karyawanNama.textContent = k.nama;
-        karyawanDetail.textContent = `${k.nik} · ${k.jabatan ?? '-'} · ${k.departemen ?? '-'}`;
+        karyawanDetail.textContent = `${k.nik} · ${k.tempat_tanggal_lahir ?? '-'}`;
         karyawanCard.classList.remove('d-none');
         searchInput.value = k.nama;
         previewKaryawan.textContent = k.nama;
         resultsBox.classList.remove('show');
-
-        const jabatanKontrakInput = document.getElementById('jabatan_kontrak');
-        const bagianKontrakInput = document.getElementById('bagian_kontrak');
-        if (jabatanKontrakInput && !jabatanKontrakInput.value) jabatanKontrakInput.value = k.jabatan ?? '';
-        if (bagianKontrakInput && !bagianKontrakInput.value) bagianKontrakInput.value = k.departemen ?? '';
     }
 
+    // Cari per-kata: "Abd Qodir" tetap cocok dengan "Abdul Qodir" karena
+    // backend sekarang cek tiap kata terpisah (AND), bukan exact substring.
     searchInput.addEventListener('input', function () {
         clearTimeout(searchTimer);
         const q = this.value.trim();
         karyawanIdInput.value = '';
         karyawanCard.classList.add('d-none');
         previewKaryawan.textContent = '-';
-        if (q.length < 2) { resultsBox.classList.remove('show'); return; }
-        searchTimer = setTimeout(() => doSearch(q), 250);
+        if (q.length < 1) { resultsBox.classList.remove('show'); return; }
+        searchTimer = setTimeout(() => doSearch(q), 200);
     });
 
     document.addEventListener('click', function (e) {
@@ -293,18 +278,17 @@ document.addEventListener('DOMContentLoaded', function () {
         previewKaryawan.textContent = '-';
     });
 
-    // ------- Live preview nomor kontrak -------
+    // ------- Live preview + toggle Tanggal Selesai per jenis kontrak -------
     const jenisEl = document.getElementById('jenis_kontrak_id');
-    const ttdEl = document.getElementById('penandatangan_id');
     const tanggalEl = document.getElementById('tanggal');
-    const tanggalMulaiEl = document.getElementById('tanggal_mulai');
     const tanggalSelesaiEl = document.getElementById('tanggal_selesai');
+    const tanggalSelesaiLabel = document.getElementById('tanggalSelesaiLabel');
+    const masaGilingNote = document.getElementById('masaGilingNote');
 
     const nomorUrut = document.getElementById('nomorUrut');
     const nomorUrutHelp = document.getElementById('nomorUrutHelp');
     const previewNumber = document.getElementById('previewNumber');
     const previewJenis = document.getElementById('previewJenis');
-    const previewTtd = document.getElementById('previewTtd');
     const previewTanggal = document.getElementById('previewTanggal');
     const submitBtn = document.querySelector('#kontrakForm button[type="submit"]');
 
@@ -314,11 +298,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const kontrakPrefix = "{{ config('kontrak.prefix', 'SG26-PERSE') }}";
 
     function pad(n){ return String(n).padStart(3, '0'); }
-
-    function selectedKode(select){
-        if(select.selectedIndex==-1) return "-";
-        return select.options[select.selectedIndex].dataset.kode ?? "-";
-    }
 
     function selectedKodeNomor(select){
         if(select.selectedIndex==-1) return "---";
@@ -332,31 +311,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updatePreview(){
         let kodeNomor = selectedKodeNomor(jenisEl);
-        let ttd = selectedKode(ttdEl);
+        let label = jenisEl.selectedIndex > -1 ? (jenisEl.options[jenisEl.selectedIndex].dataset.label || '-') : '-';
 
         previewNumber.textContent = `${kontrakPrefix}-${kodeNomor}/${formatTanggal(tanggalEl.value)}.${seqText}`;
-        previewJenis.textContent = jenisEl.selectedIndex > -1 ? (jenisEl.options[jenisEl.selectedIndex].text || '-') : '-';
-        previewTtd.textContent = ttd === '-' ? 'Belum dipilih' : ttd;
+        previewJenis.textContent = label;
         previewTanggal.textContent = tanggalEl.value || '-';
     }
 
-    // Auto-hitung tanggal selesai berdasarkan masa berlaku jenis kontrak
-    jenisEl.addEventListener('change', function () {
+    // Toggle input Tanggal Selesai: masa giling (PJJ/DMG) -> sembunyikan input,
+    // tampil catatan otomatis. Bukan masa giling (KTR) -> input wajib.
+    function toggleTanggalSelesai(){
         const opt = jenisEl.options[jenisEl.selectedIndex];
-        const masa = parseInt(opt.dataset.masa || '0');
-        if (masa && tanggalMulaiEl.value) {
-            const d = new Date(tanggalMulaiEl.value);
-            d.setMonth(d.getMonth() + masa);
-            d.setDate(d.getDate() - 1);
-            tanggalSelesaiEl.value = d.toISOString().slice(0, 10);
-        } else if (!masa) {
-            tanggalSelesaiEl.value = '';
-        }
-        updatePreview();
-    });
+        const masaGiling = opt && opt.dataset.masaGiling === '1';
 
-    tanggalMulaiEl.addEventListener('change', function () {
-        jenisEl.dispatchEvent(new Event('change'));
+        if (masaGiling) {
+            tanggalSelesaiEl.classList.add('d-none');
+            tanggalSelesaiEl.required = false;
+            tanggalSelesaiEl.value = '';
+            tanggalSelesaiLabel.querySelector('.ledger-required')?.classList.add('d-none');
+            masaGilingNote.classList.remove('d-none');
+        } else {
+            tanggalSelesaiEl.classList.remove('d-none');
+            tanggalSelesaiEl.required = true;
+            tanggalSelesaiLabel.querySelector('.ledger-required')?.classList.remove('d-none');
+            masaGilingNote.classList.add('d-none');
+        }
+    }
+
+    jenisEl.addEventListener('change', function () {
+        toggleTanggalSelesai();
+        updatePreview();
     });
 
     async function loadUsedNumbers(){
@@ -417,9 +401,8 @@ document.addEventListener('DOMContentLoaded', function () {
     jenisEl.addEventListener('change', async function () {
         await loadUsedNumbers();
         await refreshNextSequence();
-        checkNomorStatus(); // ini sudah manggil updatePreview() di dalamnya
+        checkNomorStatus();
     });
-    ttdEl.addEventListener('change', updatePreview);
 
     tanggalEl.addEventListener('change', async function(){
         await loadUsedNumbers();
@@ -430,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
     nomorUrut.addEventListener('input', checkNomorStatus);
 
     (async function init(){
+        toggleTanggalSelesai();
         await loadUsedNumbers();
         checkNomorStatus();
     })();

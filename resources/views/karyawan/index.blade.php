@@ -14,81 +14,76 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <h2 class="ledger-title mb-1">Data Karyawan</h2>
-                <p class="ledger-subtitle mb-0">Database ini dipakai untuk isi otomatis dokumen kontrak.</p>
+                <p class="ledger-subtitle mb-0">Database identitas ini dipakai untuk isi otomatis dokumen kontrak.</p>
             </div>
             <a href="{{ route('karyawan.create') }}" class="btn ledger-btn-brass">
                 <i class="bi bi-person-plus me-1"></i> Tambah Karyawan
             </a>
         </div>
 
-        <form method="GET" class="ledger-toolbar row g-2 mb-3">
-            <div class="col-md-8">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control"
-                       placeholder="Cari nama / NIK / jabatan...">
-            </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn ledger-btn-brass flex-fill">Cari</button>
-                <a href="{{ route('karyawan.index') }}" class="btn ledger-btn-ghost">Reset</a>
-            </div>
-        </form>
+        <div class="ledger-toolbar mb-3 position-relative">
+            <input type="text" id="karyawanLiveSearch" value="{{ request('search') }}" class="form-control"
+                   placeholder="Ketik nama / NIK / No. KTP..." autocomplete="off">
+            <div class="spinner-border spinner-border-sm text-secondary position-absolute d-none"
+                 id="karyawanSearchSpinner" style="right: 0.9rem; top: 0.65rem;" role="status"></div>
+        </div>
 
-        <div class="card ledger-card">
-            <div class="card-body p-0">
-                <table class="table ledger-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>NIK</th>
-                            <th>Nama</th>
-                            <th>Jabatan</th>
-                            <th>Departemen</th>
-                            <th>Status</th>
-                            <th class="text-end">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($karyawanList as $k)
-                            <tr>
-                                <td class="ledger-tanggal">{{ $k->nik }}</td>
-                                <td class="ledger-perihal">{{ $k->nama }}</td>
-                                <td class="ledger-tujuan">{{ $k->jabatan ?? '-' }}</td>
-                                <td class="ledger-tujuan">{{ $k->departemen ?? '-' }}</td>
-                                <td>
-                                    <span class="ledger-status-pill {{ $k->status_karyawan === 'Aktif' ? 'is-active' : 'is-done' }}">
-                                        {{ $k->status_karyawan }}
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <a href="{{ route('karyawan.edit', $k) }}" class="btn ledger-btn-detail" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form method="POST" action="{{ route('karyawan.destroy', $k) }}"
-                                              onsubmit="return confirm('Hapus data {{ $k->nama }}? Kontrak yang sudah dibuat untuk karyawan ini juga akan terhapus.')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn ledger-btn-detail text-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-4 ledger-subtitle">Belum ada data karyawan.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            @if ($karyawanList->hasPages())
-                <div class="card-body">
-                    {{ $karyawanList->links() }}
-                </div>
-            @endif
+        <div id="karyawanTableWrap">
+            @include('karyawan._table')
         </div>
 
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('karyawanLiveSearch');
+    const wrap = document.getElementById('karyawanTableWrap');
+    const spinner = document.getElementById('karyawanSearchSpinner');
+    const baseUrl = "{{ route('karyawan.index') }}";
+    let debounceTimer = null;
+    let currentRequest = null;
+
+    async function runSearch(q, pushUrl = true) {
+        spinner.classList.remove('d-none');
+
+        const url = q ? `${baseUrl}?search=${encodeURIComponent(q)}` : baseUrl;
+
+        if (pushUrl) {
+            window.history.replaceState({}, '', url);
+        }
+
+        if (currentRequest) {
+            currentRequest.abort();
+        }
+        const controller = new AbortController();
+        currentRequest = controller;
+
+        try {
+            const res = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: controller.signal,
+            });
+            const html = await res.text();
+            wrap.innerHTML = html;
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error(err);
+            }
+        } finally {
+            spinner.classList.add('d-none');
+        }
+    }
+
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => runSearch(this.value.trim()), 300);
+    });
+
+    // Klik link paginasi di dalam tabel tetap jalan normal (reload halaman biasa).
+});
+</script>
+@endpush
 
 @endsection

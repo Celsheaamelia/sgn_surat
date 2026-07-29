@@ -11,6 +11,7 @@ class ArsipKasbon extends Model
     protected $fillable = [
         'tanggal_transaksi',
         'document_no',
+        'numerator',
         'park_oleh',
         'nama_vendor',
         'kode_vendor',

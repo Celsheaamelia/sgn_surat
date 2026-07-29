@@ -42,14 +42,6 @@ class KontrakController extends Controller
     public function create()
     {
         $jenisList = JenisKontrak::orderBy('nama_jenis')->get();
-        $penandatanganList = Penandatangan::orderByRaw("
-            CASE
-                WHEN jabatan = 'General Manager' THEN 1
-                WHEN jabatan = 'Manager' THEN 2
-                WHEN jabatan = 'Asisten Manager' THEN 3
-                ELSE 4
-            END
-        ")->get();
 
         $tanggal = now()->toDateString();
         $defaultJenis = $jenisList->first();
@@ -57,7 +49,9 @@ class KontrakController extends Controller
             ? $this->nextAvailableContractSequence($tanggal, $defaultJenis->kode_nomor ?: $defaultJenis->kode)
             : 1;
 
-        return view('kontrak.create', compact('jenisList', 'penandatanganList', 'nextSequence'));
+        $penandatangan = $this->resolveDefaultPenandatangan();
+
+        return view('kontrak.create', compact('jenisList', 'nextSequence', 'penandatangan'));
     }
 
     public function store(Request $request, DocxTemplateService $docxService)
@@ -65,7 +59,6 @@ class KontrakController extends Controller
         $request->validate([
             'karyawan_id'         => 'required|exists:karyawans,id',
             'jenis_kontrak_id'    => 'required|exists:jenis_kontraks,id',
-            'penandatangan_id'    => 'nullable|exists:penandatangan,id',
             'tanggal'             => 'required|date',
             'nomor_urut'          => 'required|integer|min:1',
             'tanggal_mulai'       => 'required|date',
@@ -75,13 +68,22 @@ class KontrakController extends Controller
             'rincian_pekerjaan_1' => 'nullable|string|max:255',
             'rincian_pekerjaan_2' => 'nullable|string|max:255',
             'rincian_pekerjaan_3' => 'nullable|string|max:255',
-            'gaji_pokok'          => 'nullable|numeric|min:0',
             'catatan'             => 'nullable|string',
         ]);
 
         $karyawan      = Karyawan::findOrFail($request->karyawan_id);
         $jenisKontrak  = JenisKontrak::findOrFail($request->jenis_kontrak_id);
-        $penandatangan = $request->penandatangan_id ? Penandatangan::find($request->penandatangan_id) : null;
+        $penandatangan = $this->resolveDefaultPenandatangan();
+
+        // Tanggal Selesai wajib diisi manual HANYA untuk jenis kontrak yang
+        // bukan masa giling (KTR / 12 bulan). Untuk PJJ/masa giling, selesainya
+        // otomatis "sampai berakhirnya Masa Giling" - tidak boleh diisi tanggal
+        // tetap secara manual di form.
+        if (!$jenisKontrak->masa_giling && !$request->tanggal_selesai) {
+            return back()->withInput()->with('error',
+                'Tanggal Selesai wajib diisi untuk jenis kontrak ' . ($jenisKontrak->nama_singkat ?: $jenisKontrak->nama_jenis) . '.'
+            );
+        }
 
         $kodeNomor = $jenisKontrak->kode_nomor ?: $jenisKontrak->kode;
         $nomorInt  = (int) $request->nomor_urut;
@@ -103,13 +105,10 @@ class KontrakController extends Controller
 
         $nomorKontrak = $this->buildNomorKontrak($jenisKontrak, $request->tanggal, $urut);
 
-        $tanggalSelesai = $request->tanggal_selesai;
-        if (!$tanggalSelesai && $jenisKontrak->masa_berlaku_bulan) {
-            $tanggalSelesai = Carbon::parse($request->tanggal_mulai)
-                ->addMonths($jenisKontrak->masa_berlaku_bulan)
-                ->subDay()
-                ->toDateString();
-        }
+        // Masa giling (PJJ) -> tanggal_selesai memang sengaja dikosongkan di
+        // database (artinya "sampai ditetapkan berakhirnya Masa Giling").
+        // Kontrak biasa (KTR) -> tanggal_selesai wajib dari input form.
+        $tanggalSelesai = $jenisKontrak->masa_giling ? null : $request->tanggal_selesai;
 
         $kontrak = Kontrak::create([
             'nomor_kontrak'        => $nomorKontrak,
@@ -119,12 +118,15 @@ class KontrakController extends Controller
             'penandatangan_id'     => $penandatangan?->id,
             'tanggal_mulai'        => $request->tanggal_mulai,
             'tanggal_selesai'      => $tanggalSelesai,
-            'jabatan_kontrak'      => $request->jabatan_kontrak ?: $karyawan->jabatan,
-            'bagian_kontrak'       => $request->bagian_kontrak ?: $karyawan->departemen,
+            'jabatan_kontrak'      => $request->jabatan_kontrak,
+            'bagian_kontrak'       => $request->bagian_kontrak,
             'rincian_pekerjaan_1'  => $request->rincian_pekerjaan_1,
             'rincian_pekerjaan_2'  => $request->rincian_pekerjaan_2,
             'rincian_pekerjaan_3'  => $request->rincian_pekerjaan_3,
-            'gaji_pokok'           => $request->gaji_pokok,
+            // Gaji pokok sudah standar per jenis kontrak (lihat draft), jadi
+            // diambil otomatis dari jenis_kontraks.gaji_pokok_default -
+            // tidak lagi diinput manual lewat form.
+            'gaji_pokok'           => $jenisKontrak->gaji_pokok_default,
             'catatan'              => $request->catatan,
             'status'               => 'Draft',
             'user_id'              => Auth::id(),
@@ -142,6 +144,25 @@ class KontrakController extends Controller
         return redirect()->route('kontrak.index')
             ->with('success', 'Kontrak berhasil dibuat.')
             ->with('created_nomor', $nomorKontrak);
+    }
+
+    /**
+     * Semua kontrak SG26 ditandatangani orang yang sama (General Manager),
+     * jadi tidak perlu dipilih manual tiap kali - otomatis ambil urutan
+     * jabatan tertinggi (General Manager > Manager > Asisten Manager).
+     * Kalau suatu saat memang butuh milih manual lagi, tinggal kembalikan
+     * dropdown penandatangan_id di form dan skip method ini.
+     */
+    private function resolveDefaultPenandatangan(): ?Penandatangan
+    {
+        return Penandatangan::orderByRaw("
+            CASE
+                WHEN jabatan = 'General Manager' THEN 1
+                WHEN jabatan = 'Manager' THEN 2
+                WHEN jabatan = 'Asisten Manager' THEN 3
+                ELSE 4
+            END
+        ")->first();
     }
 
     /**
@@ -174,28 +195,22 @@ class KontrakController extends Controller
             $templatePath = Storage::path('templates/kontrak/default_template.docx');
         }
 
-        // Data karyawan sudah lengkap dari database (hasil import mail-merge),
-        // jadi tempat_tanggal_lahir dipakai langsung apa adanya - tidak perlu
-        // digabung manual lagi seperti sebelumnya.
         $tempatTanggalLahir = $karyawan->tempat_tanggal_lahir ?: '-';
 
         $tanggalKontrak = Carbon::parse($kontrak->tanggal);
         $tanggalMulai   = Carbon::parse($kontrak->tanggal_mulai);
-        $gajiPokok      = (int) ($kontrak->gaji_pokok ?? 0);
+        $gajiPokok      = (int) ($kontrak->gaji_pokok ?? $jenis->gaji_pokok_default ?? 0);
 
         $data = [
-            // --- Header & identitas kontrak ---
             'NOMOR_KONTRAK'             => $kontrak->nomor_kontrak,
             'JENIS_KONTRAK'             => $jenis->nama_jenis,
             'TANGGAL_KONTRAK'           => $tanggalKontrak->translatedFormat('d F Y'),
 
-            // Kalimat pembuka "Pada hari ini, {hari} tanggal {terbilang} bulan {bulan} ... ({singkat})"
             'PADA_HARI_INI'             => IndonesianDate::namaHari($tanggalKontrak),
             'TANGGAL_KONTRAK_TERBILANG' => IndonesianDate::tanggalTerbilang($tanggalKontrak),
             'BULAN_KONTRAK'             => IndonesianDate::namaBulan($tanggalKontrak),
             'TANGGAL_KONTRAK_SINGKAT'   => $tanggalKontrak->format('d-m-Y'),
 
-            // --- PIHAK KESATU (penandatangan) ---
             'NAMA_PENANDATANGAN'        => $ttd->nama ?? $ttd->jabatan ?? '-',
             'JABATAN_PENANDATANGAN'     => $ttd->jabatan ?? '-',
             'NO_SK_PENANDATANGAN'       => $ttd->no_sk ?? '-',
@@ -203,28 +218,25 @@ class KontrakController extends Controller
                 ? Carbon::parse($ttd->tanggal_sk)->format('d-m-Y')
                 : '-',
 
-            // --- PIHAK KEDUA (karyawan) ---
             'NAMA_KARYAWAN'             => $karyawan->nama,
-            'NIK_KARYAWAN'              => $karyawan->nip,
+            'NIK_KARYAWAN'              => $karyawan->nik,
             'NO_KTP_KARYAWAN'           => $karyawan->no_ktp ?? '-',
             'TEMPAT_TANGGAL_LAHIR'      => $tempatTanggalLahir,
             'JENIS_KELAMIN'             => $karyawan->jenis_kelamin ?? '-',
             'AGAMA'                     => $karyawan->agama ?? '-',
             'STATUS_PERKAWINAN'         => $karyawan->status_perkawinan ?? '-',
             'ALAMAT_KARYAWAN'           => $karyawan->alamat ?? '-',
-            'JABATAN_KARYAWAN'          => $kontrak->jabatan_kontrak ?: ($karyawan->jabatan ?? '-'),
-            'DEPARTEMEN'                => $kontrak->bagian_kontrak ?: ($karyawan->departemen ?? '-'),
-            'RINCIAN_PEKERJAAN_1'       => $kontrak->rincian_pekerjaan_1 ?: ($karyawan->rincian_pekerjaan_1 ?: '-'),
-            'RINCIAN_PEKERJAAN_2'       => $kontrak->rincian_pekerjaan_2 ?: ($karyawan->rincian_pekerjaan_2 ?: '-'),
-            'RINCIAN_PEKERJAAN_3'       => $kontrak->rincian_pekerjaan_3 ?: ($karyawan->rincian_pekerjaan_3 ?: '-'),
+            'JABATAN_KARYAWAN'          => $kontrak->jabatan_kontrak ?: '-',
+            'DEPARTEMEN'                => $kontrak->bagian_kontrak ?: '-',
+            'RINCIAN_PEKERJAAN_1'       => $kontrak->rincian_pekerjaan_1 ?: '-',
+            'RINCIAN_PEKERJAAN_2'       => $kontrak->rincian_pekerjaan_2 ?: '-',
+            'RINCIAN_PEKERJAAN_3'       => $kontrak->rincian_pekerjaan_3 ?: '-',
 
-            // --- Masa berlaku ---
             'TANGGAL_MULAI'             => $tanggalMulai->translatedFormat('d F Y'),
             'TANGGAL_SELESAI'           => $kontrak->tanggal_selesai
                 ? Carbon::parse($kontrak->tanggal_selesai)->translatedFormat('d F Y')
                 : ($jenis->masa_giling ? 'Berakhirnya Masa Giling' : 'Tidak Ditentukan (Tetap)'),
 
-            // --- Upah ---
             'GAJI_POKOK'                => number_format($gajiPokok, 0, ',', '.'),
             'GAJI_POKOK_TERBILANG'      => $gajiPokok > 0
                 ? IndonesianDate::rupiahTerbilang($gajiPokok)
@@ -243,7 +255,6 @@ class KontrakController extends Controller
 
         return $outputRelative;
     }
-
 
     public function show(Kontrak $kontrak)
     {

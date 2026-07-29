@@ -12,14 +12,17 @@ class JenisKontrak extends Model
         'kode',
         'kode_nomor',       // segmen nomor surat: KTR / PJJ
         'nama_jenis',
-        'nama_singkat',     // contoh: LMG-DMG, DMG
+        'nama_singkat',     // label pendek: "PKWT" / "PKWT DMG"
         'masa_berlaku_bulan',
         'masa_giling',      // true = kontrak dibuat selama masa giling (pakai kode PJJ)
+        'gaji_pokok_default',
         'template_file',
+        'deskripsi',
     ];
 
     protected $casts = [
         'masa_giling' => 'boolean',
+        'gaji_pokok_default' => 'decimal:2',
     ];
 
     public function kontrak()

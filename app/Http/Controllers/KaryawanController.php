@@ -7,17 +7,37 @@ use Illuminate\Http\Request;
 
 class KaryawanController extends Controller
 {
+    /**
+     * Pisah query jadi kata per kata, tiap kata harus ketemu di salah satu
+     * kolom (nama/nik/no_ktp) - supaya "Abd Qodir" tetap ketemu "Abdul Qodir",
+     * bukan cuma exact substring match kayak sebelumnya.
+     */
+    private function applySearch($query, string $search)
+    {
+        $words = array_filter(preg_split('/\s+/', trim($search)));
+
+        foreach ($words as $word) {
+            $query->where(function ($q) use ($word) {
+                $q->where('nama', 'like', "%{$word}%")
+                  ->orWhere('nik', 'like', "%{$word}%")
+                  ->orWhere('no_ktp', 'like', "%{$word}%");
+            });
+        }
+
+        return $query;
+    }
+
     public function index(Request $request)
     {
         $karyawanList = Karyawan::query()
-            ->when($request->search, function ($q) use ($request) {
-                $q->where('nama', 'like', "%{$request->search}%")
-                  ->orWhere('nik', 'like', "%{$request->search}%")
-                  ->orWhere('jabatan', 'like', "%{$request->search}%");
-            })
+            ->when($request->search, fn ($q) => $this->applySearch($q, $request->search))
             ->orderBy('nama')
             ->paginate(10)
             ->withQueryString();
+
+        if ($request->ajax()) {
+            return view('karyawan._table', compact('karyawanList'))->render();
+        }
 
         return view('karyawan.index', compact('karyawanList'));
     }
@@ -68,14 +88,10 @@ class KaryawanController extends Controller
         $q = $request->get('q', '');
 
         $result = Karyawan::query()
-            ->where('status_karyawan', 'Aktif')
-            ->when($q, function ($query) use ($q) {
-                $query->where('nama', 'like', "%{$q}%")
-                      ->orWhere('nik', 'like', "%{$q}%");
-            })
+            ->when($q, fn ($query) => $this->applySearch($query, $q))
             ->orderBy('nama')
             ->limit(15)
-            ->get(['id', 'nik', 'no_ktp', 'nama', 'jabatan', 'departemen', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'agama', 'status_perkawinan', 'alamat']);
+            ->get(['id', 'nik', 'no_ktp', 'nama', 'tempat_tanggal_lahir', 'jenis_kelamin', 'agama', 'status_perkawinan', 'alamat']);
 
         return response()->json($result);
     }
@@ -83,21 +99,14 @@ class KaryawanController extends Controller
     private function validateData(Request $request, $ignoreId = null): array
     {
         return $request->validate([
-            'nik'                 => 'required|string|max:30|unique:karyawans,nik' . ($ignoreId ? ",{$ignoreId}" : ''),
-            'no_ktp'              => 'nullable|string|max:30',
-            'nama'                => 'required|string|max:150',
-            'jabatan'             => 'nullable|string|max:100',
-            'departemen'          => 'nullable|string|max:100',
-            'tempat_lahir'        => 'nullable|string|max:100',
-            'tanggal_lahir'       => 'nullable|date',
-            'jenis_kelamin'       => 'nullable|in:Laki-laki,Perempuan',
-            'agama'               => 'nullable|string|max:30',
-            'status_perkawinan'   => 'nullable|string|max:30',
-            'alamat'              => 'nullable|string',
-            'no_hp'               => 'nullable|string|max:30',
-            'email'               => 'nullable|email|max:150',
-            'tanggal_mulai_kerja' => 'nullable|date',
-            'status_karyawan'     => 'nullable|in:Aktif,Nonaktif',
+            'nik'                   => 'required|string|max:30|unique:karyawans,nik' . ($ignoreId ? ",{$ignoreId}" : ''),
+            'no_ktp'                => 'nullable|string|max:30',
+            'nama'                  => 'required|string|max:150',
+            'tempat_tanggal_lahir'  => 'nullable|string|max:255',
+            'jenis_kelamin'         => 'nullable|in:Laki-laki,Perempuan',
+            'agama'                 => 'nullable|string|max:30',
+            'status_perkawinan'     => 'nullable|string|max:30',
+            'alamat'                => 'nullable|string',
         ]);
     }
 }

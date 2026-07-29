@@ -176,6 +176,7 @@
                     <div class="kv-grid">
                         <div class="kv-row"><span class="kv-key">Tanggal Transaksi</span><span class="kv-val">{{ optional($kasbon->tanggal_transaksi)->format('d M Y') ?? '-' }}</span></div>
                         <div class="kv-row"><span class="kv-key">Document No</span><span class="kv-val">{{ $kasbon->document_no ?? '-' }}</span></div>
+                        <div class="kv-row"><span class="kv-key">Numerator</span><span class="kv-val">{{ $kasbon->numerator ?? '-' }}</span></div>
                         <div class="kv-row"><span class="kv-key">Park Oleh</span><span class="kv-val">{{ $kasbon->park_oleh ?? '-' }}</span></div>
                         <div class="kv-row"><span class="kv-key">Nama Vendor</span><span class="kv-val">{{ $kasbon->nama_vendor ?? '-' }}</span></div>
                         <div class="kv-row"><span class="kv-key">Kode Vendor</span><span class="kv-val">{{ $kasbon->kode_vendor ?? '-' }}</span></div>
