@@ -95,6 +95,12 @@
     }
     #f_document_no.is-duplicate { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(179,67,47,0.12); }
 
+    .ocr-failed-banner {
+        background: #fef8ea; border: 1px solid #f0dfab; color: #6b5320;
+        border-radius: 0.7rem; padding: 0.9rem 1.1rem; font-size: 0.88rem;
+        display: flex; gap: 0.6rem; align-items: flex-start; font-weight: 600;
+    }
+
     /* ==================== OCR Loading Overlay ==================== */
     .ocr-loading-overlay {
         position: fixed;
@@ -204,6 +210,11 @@
             <div class="duplicate-banner mb-4 d-none" id="duplicateBanner">
                 <i class="bi bi-exclamation-triangle-fill mt-1"></i>
                 <div id="duplicateBannerText">Surat Permintaan Pembayaran ini sudah diunggah.</div>
+            </div>
+
+            <div class="ocr-failed-banner mb-4 d-none" id="ocrFailedBanner">
+                <i class="bi bi-exclamation-circle-fill mt-1"></i>
+                <div id="ocrFailedBannerText">Dokumen gagal terbaca otomatis. Pastikan gambar jelas dan koneksi internet tersambung, lalu isi field di bawah secara manual atau coba upload ulang.</div>
             </div>
 
             @if($errors->any())
@@ -376,12 +387,22 @@
     const itemRowTemplate = document.getElementById('itemRowTemplate');
     const addRowBtn = document.getElementById('addRowBtn');
     const ocrLoadingOverlay = document.getElementById('ocrLoadingOverlay');
+    const ocrFailedBanner = document.getElementById('ocrFailedBanner');
+    const ocrFailedBannerText = document.getElementById('ocrFailedBannerText');
 
     function showOcrLoading() {
         ocrLoadingOverlay.classList.add('is-active');
     }
     function hideOcrLoading() {
         ocrLoadingOverlay.classList.remove('is-active');
+    }
+
+    function showOcrFailedWarning(message) {
+        ocrFailedBannerText.textContent = message || 'Dokumen gagal terbaca otomatis. Pastikan gambar jelas dan koneksi internet tersambung, lalu isi field di bawah secara manual atau coba upload ulang.';
+        ocrFailedBanner.classList.remove('d-none');
+    }
+    function clearOcrFailedWarning() {
+        ocrFailedBanner.classList.add('d-none');
     }
 
     // ==================== Format tampilan Rupiah (Rp + titik ribuan) ====================
@@ -574,6 +595,7 @@
 
         scanBtn.disabled = true;
         scanBtnText.textContent = 'Membaca surat...';
+        clearOcrFailedWarning();
         showOcrLoading();
 
         const fd = new FormData();
@@ -617,13 +639,24 @@
             } else {
                 clearDuplicateWarning();
             }
+
+            // res.ocr_success sengaja dikirim dari server: true kalau minimal ada
+            // satu field/baris item yang berhasil ketebak, false kalau dokumennya
+            // sama sekali gagal dibaca (blur, kepotong, atau OCR error). Field yang
+            // sudah ketebak (kalau ada) tetap terisi seperti biasa -- ini cuma nambah
+            // notifikasi, gak pernah mengosongkan ulang field yang sudah keisi.
+            if (res.ocr_success === false) {
+                showOcrFailedWarning();
+            } else {
+                clearOcrFailedWarning();
+            }
         })
         .catch(() => {
-            alert('Gagal memproses OCR. Coba lagi atau isi manual.');
             itemsWrapper.innerHTML = '';
             addItemRow();
             uploadCard.classList.add('d-none');
             verifyCard.classList.remove('d-none');
+            showOcrFailedWarning('Dokumen gagal terbaca. Pastikan gambar jelas dan koneksi internet tersambung, lalu isi field di bawah secara manual atau coba upload ulang.');
         })
         .finally(() => {
             scanBtn.disabled = false;

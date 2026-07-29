@@ -170,6 +170,21 @@
     #resultsContainer .page-item.disabled .page-link {
         color: var(--line); background-color: #fff; border-color: var(--line); opacity: 0.7;
     }
+
+    /* ==================== Export ke Excel: spinner + status selesai ==================== */
+    .export-spinner {
+        display: inline-block; width: 1.05rem; height: 1.05rem;
+        border: 2px solid rgba(169,129,47,0.25); border-top-color: var(--brass-dark);
+        border-radius: 50%; animation: export-spin 0.7s linear infinite;
+    }
+    @keyframes export-spin { to { transform: rotate(360deg); } }
+    .export-done-text {
+        font-size: 0.82rem; font-weight: 600; color: var(--success, #2f7d4f);
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        animation: export-fade-in 0.15s ease-in;
+    }
+    @keyframes export-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    #exportBtn.is-loading { opacity: 0.7; pointer-events: none; }
 </style>
 
 <div class="container-fluid">
@@ -216,9 +231,15 @@
                 <button type="button" class="btn ledger-btn-ghost" id="resetFilterBtn">
                     <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filter
                 </button>
-                <a href="{{ route('arsipkasbon.export') }}" class="btn btn-outline-secondary ms-md-auto" id="exportBtn">
-                    <i class="bi bi-file-earmark-excel"></i> Export ke Excel
-                </a>
+                <div class="d-flex align-items-center gap-2 ms-md-auto">
+                    <a href="{{ route('arsipkasbon.export') }}" class="btn btn-outline-secondary" id="exportBtn">
+                        <i class="bi bi-file-earmark-excel"></i> Export ke Excel
+                    </a>
+                    <span class="export-spinner d-none" id="exportSpinner" role="status" aria-hidden="true"></span>
+                    <span class="export-done-text d-none" id="exportDoneText">
+                        <i class="bi bi-check-circle-fill"></i> Selesai
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -339,6 +360,57 @@
     updateClearBtn();
     updateExportLink(currentParams());
     attachPaginationHandlers();
+
+    // ==================== Export ke Excel: spinner saat loading + "Selesai" ====================
+    const exportSpinner  = document.getElementById('exportSpinner');
+    const exportDoneText = document.getElementById('exportDoneText');
+    let exportDoneTimer  = null;
+
+    function extractFilename(response, fallback) {
+        const header = response.headers.get('Content-Disposition') || '';
+        const match = header.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+        return match ? decodeURIComponent(match[1]) : fallback;
+    }
+
+    exportBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (exportBtn.classList.contains('is-loading')) return;
+
+        clearTimeout(exportDoneTimer);
+        exportDoneText.classList.add('d-none');
+        exportBtn.classList.add('is-loading');
+        exportSpinner.classList.remove('d-none');
+
+        fetch(exportBtn.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => {
+                if (!response.ok) throw new Error('Export gagal');
+                const filename = extractFilename(response, 'arsip-spp.xlsx');
+                return response.blob().then(blob => ({ blob, filename }));
+            })
+            .then(({ blob, filename }) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+
+                exportSpinner.classList.add('d-none');
+                exportDoneText.classList.remove('d-none');
+                exportDoneTimer = setTimeout(() => {
+                    exportDoneText.classList.add('d-none');
+                }, 2500);
+            })
+            .catch(() => {
+                exportSpinner.classList.add('d-none');
+                alert('Export ke Excel gagal. Coba lagi.');
+            })
+            .finally(() => {
+                exportBtn.classList.remove('is-loading');
+            });
+    });
 })();
 </script>
 @endpush

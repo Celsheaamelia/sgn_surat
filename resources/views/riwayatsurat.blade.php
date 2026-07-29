@@ -395,6 +395,24 @@
         color: var(--brass-tint);
     }
 
+    #exportExcelBtn.is-loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .export-spinner {
+        display: inline-block; width: 1.05rem; height: 1.05rem;
+        border: 2px solid rgba(169,129,47,0.25); border-top-color: var(--brass-dark);
+        border-radius: 50%; animation: export-spin 0.7s linear infinite;
+    }
+    @keyframes export-spin { to { transform: rotate(360deg); } }
+    .export-done-text {
+        font-size: 0.82rem; font-weight: 600; color: var(--success, #2f7d4f);
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        animation: export-fade-in 0.15s ease-in;
+    }
+    @keyframes export-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
     @media (prefers-reduced-motion: reduce) {
         * {
             transition: none !important;
@@ -424,6 +442,10 @@
                         <a href="#" id="exportExcelBtn" class="btn btn-outline-secondary">
                             <i class="bi bi-file-earmark-excel"></i> Export Excel
                         </a>
+                        <span class="export-spinner d-none" id="exportSpinner" role="status" aria-hidden="true"></span>
+                        <span class="export-done-text d-none" id="exportDoneText">
+                            <i class="bi bi-check-circle-fill"></i> Selesai
+                        </span>
                         <span class="ledger-badge">
                             <span id="totalCount">{{ $suratList->total() ?? 0 }}</span> surat tercatat
                         </span>
@@ -643,10 +665,20 @@
     renumberVisibleRows();
 
     const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const exportSpinner = document.getElementById('exportSpinner');
+    const exportDoneText = document.getElementById('exportDoneText');
+    let exportDoneTimer = null;
+
+    function extractFilename(response, fallback) {
+        const header = response.headers.get('Content-Disposition') || '';
+        const match = header.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+        return match ? decodeURIComponent(match[1]) : fallback;
+    }
 
     if (exportExcelBtn) {
         exportExcelBtn.addEventListener('click', function (e) {
             e.preventDefault();
+            if (exportExcelBtn.classList.contains('is-loading')) return;
 
             const params = new URLSearchParams();
 
@@ -660,7 +692,42 @@
                 params.set('sort', sortOrder.value);
             }
 
-            window.location.href = `{{ route('surat.export') }}?${params.toString()}`;
+            const exportUrl = `{{ route('surat.export') }}?${params.toString()}`;
+
+            clearTimeout(exportDoneTimer);
+            exportDoneText.classList.add('d-none');
+            exportExcelBtn.classList.add('is-loading');
+            exportSpinner.classList.remove('d-none');
+
+            fetch(exportUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(response => {
+                    if (!response.ok) throw new Error('Export gagal');
+                    const filename = extractFilename(response, 'riwayat-surat.xlsx');
+                    return response.blob().then(blob => ({ blob, filename }));
+                })
+                .then(({ blob, filename }) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+
+                    exportSpinner.classList.add('d-none');
+                    exportDoneText.classList.remove('d-none');
+                    exportDoneTimer = setTimeout(() => {
+                        exportDoneText.classList.add('d-none');
+                    }, 2500);
+                })
+                .catch(() => {
+                    exportSpinner.classList.add('d-none');
+                    alert('Export ke Excel gagal. Coba lagi.');
+                })
+                .finally(() => {
+                    exportExcelBtn.classList.remove('is-loading');
+                });
         });
     }
 </script>

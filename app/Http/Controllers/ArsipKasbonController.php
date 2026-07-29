@@ -198,10 +198,11 @@ class ArsipKasbonController extends Controller
         }
 
         return response()->json([
-            'temp_path' => $tempPath,
-            'header'    => $result['header'],
-            'items'     => $result['items'],
-            'duplicate' => $duplicate,
+            'temp_path'   => $tempPath,
+            'header'      => $result['header'],
+            'items'       => $result['items'],
+            'duplicate'   => $duplicate,
+            'ocr_success' => $result['ocr_success'] ?? true,
         ]);
     }
 
