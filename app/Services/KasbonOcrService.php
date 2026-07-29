@@ -42,11 +42,34 @@ class KasbonOcrService
             return $this->emptyResult();
         }
 
+        $header = $this->normalizeHeader($parsed['header'] ?? []);
+        $items  = $this->normalizeItems($parsed['items'] ?? []);
+        $dokumenTerbaca = filter_var($parsed['dokumen_terbaca'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
         return [
             'raw_text' => json_encode($parsed, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-            'header'   => $this->normalizeHeader($parsed['header'] ?? []),
-            'items'    => $this->normalizeItems($parsed['items'] ?? []),
+            'header'   => $header,
+            'items'    => $items,
+            // Utamakan penilaian Gemini sendiri (dokumen_terbaca) karena dia yang lihat
+            // gambarnya -- lebih akurat daripada nebak dari kosong-tidaknya field, soalnya
+            // Gemini kadang tetap ngisi field "required" walau gambarnya salah/ngawur/blur.
+            // Sebagai jaring pengaman tambahan, tetap dianggap gagal kalau field-field inti
+            // (No Dokumen, Tanggal Transaksi, Jumlah Total) sama sekali gak ada satupun yang
+            // kebaca, walau Gemini bilang "terbaca".
+            'ocr_success' => $dokumenTerbaca && $this->hasCoreValue($header),
         ];
+    }
+
+    /** Cek apakah minimal salah satu field INTI (paling penting buat arsip) berhasil kebaca. */
+    private function hasCoreValue(array $header): bool
+    {
+        foreach (['document_no', 'tanggal_transaksi', 'jumlah_total'] as $f) {
+            $val = $header[$f] ?? null;
+            if ($val !== null && $val !== '') {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -84,6 +107,19 @@ Panduan membaca tiap field:
 
 Kalau sebuah field benar-benar tidak terbaca atau tidak ada di gambar, kosongkan string-nya
 (jangan mengarang nilai). Kalau tidak ada baris item sama sekali, kembalikan array items kosong.
+
+PENTING -- penilaian "dokumen_terbaca":
+Selain field-field di atas, kamu WAJIB isi juga field "dokumen_terbaca" (true/false) yang menilai
+apakah gambar ini BENAR-BENAR bisa dibaca sebagai form SPP/kasbon yang valid. Isi FALSE kalau salah
+satu dari ini terjadi:
+- Gambar buram/blur, gelap, terlalu kecil, terpotong, atau kualitasnya terlalu jelek untuk dibaca
+    dengan yakin.
+- Gambar yang diupload BUKAN form SPP/kasbon sama sekali (misal foto KTP, struk belanja, foto orang,
+    dokumen lain yang tidak nyambung, atau gambar acak/ngawur).
+- Kamu terpaksa MENGARANG atau MENEBAK nilai document_no, tanggal_transaksi, atau jumlah_total karena
+    sebenarnya tidak kelihatan jelas di gambar -- lebih baik jujur isi FALSE daripada mengarang.
+Isi TRUE hanya kalau kamu yakin gambar ini benar form SPP/kasbon asli dan minimal document_no,
+tanggal_transaksi, atau jumlah_total kelihatan cukup jelas untuk dibaca dengan percaya diri.
 PROMPT;
     }
 
@@ -99,6 +135,7 @@ PROMPT;
         return [
             'type' => 'object',
             'properties' => [
+                'dokumen_terbaca' => ['type' => 'boolean'],
                 'header' => [
                     'type' => 'object',
                     'properties' => [
@@ -134,7 +171,7 @@ PROMPT;
                     ],
                 ],
             ],
-            'required' => ['header', 'items'],
+            'required' => ['dokumen_terbaca', 'header', 'items'],
         ];
     }
 
@@ -207,6 +244,7 @@ PROMPT;
             'raw_text' => '',
             'header'   => array_fill_keys(self::HEADER_FIELDS, null),
             'items'    => [],
+            'ocr_success' => false,
         ];
     }
 }
