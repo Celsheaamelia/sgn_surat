@@ -3,6 +3,7 @@
         <table class="table ledger-table align-middle mb-0">
             <thead>
                 <tr>
+                    <th style="width:1%;">No</th>
                     <th>NIK</th>
                     <th>Nama</th>
                     <th>No. KTP</th>
@@ -14,6 +15,7 @@
             <tbody>
                 @forelse ($karyawanList as $k)
                     <tr>
+                        <td class="ledger-tanggal">{{ $karyawanList->firstItem() + $loop->index }}</td>
                         <td class="ledger-tanggal">{{ $k->nik }}</td>
                         <td class="ledger-perihal">{{ $k->nama }}</td>
                         <td class="ledger-tanggal">{{ $k->no_ktp ?? '-' }}</td>
@@ -37,7 +39,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4 ledger-subtitle">
+                        <td colspan="7" class="text-center py-4 ledger-subtitle">
                             {{ request('search') ? 'Tidak ada karyawan yang cocok dengan pencarian.' : 'Belum ada data karyawan.' }}
                         </td>
                     </tr>
