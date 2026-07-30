@@ -18,14 +18,23 @@ class RiwayatSuratController extends Controller
 
     use NomorUrut;
 
-    public function index()
+    public function index(Request $request)
     {
         $suratList = RiwayatSurat::with([
             'penandatangan',
             'tujuanSurat',
             'klasifikasiSurat',
             'detailSurat'
-        ])->latest()->paginate(10)->withQueryString();
+        ])
+            ->when($request->tanggal_dari, function ($q) use ($request) {
+                $q->whereDate('tanggal', '>=', $request->tanggal_dari);
+            })
+            ->when($request->tanggal_sampai, function ($q) use ($request) {
+                $q->whereDate('tanggal', '<=', $request->tanggal_sampai);
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         $klasifikasiList = KlasifikasiSurat::orderBy('kode')->get();
 
@@ -212,7 +221,9 @@ class RiwayatSuratController extends Controller
         new RiwayatSuratExport(
             $request->query('search'),
             $request->query('klasifikasi'),
-            $request->query('sort', 'desc')
+            $request->query('sort', 'desc'),
+            $request->query('tanggal_dari'),
+            $request->query('tanggal_sampai')
         ),
         $filename
     );

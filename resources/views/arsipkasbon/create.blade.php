@@ -79,8 +79,25 @@
         display: flex; gap: 0.6rem; align-items: flex-start;
     }
 
-    .item-row { border: 1px solid var(--line); border-radius: 0.7rem; padding: 1rem; background: #fff; margin-bottom: 0.8rem; }
+    .item-row { position: relative; border: 1px solid var(--line); border-radius: 0.7rem; padding: 1rem 1rem 1rem 3.1rem; background: #fff; margin-bottom: 0.8rem; }
     .item-row-remove { color: var(--danger); background: none; border: none; font-size: 1.1rem; }
+    .item-row-number {
+        position: absolute;
+        left: 0.85rem;
+        top: 1rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        border-radius: 50%;
+        background: var(--brass-tint, #f4ecd8);
+        color: var(--brass-dark, #8a6a24);
+        font-family: var(--font-mono, monospace);
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(169,129,47,0.25);
+    }
 
     .form-label-sm { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem; }
 
@@ -329,6 +346,7 @@
 
 <template id="itemRowTemplate">
     <div class="item-row" data-row>
+        <div class="item-row-number" data-row-number></div>
         <div class="row g-2 align-items-end">
             <div class="col-md-3">
                 <label class="form-label-sm">No Akun</label>
@@ -476,6 +494,15 @@
         scanBtn.disabled = true;
     });
 
+    // Beri nomor urut 1, 2, 3, ... di badge sebelah kiri tiap baris rincian akun,
+    // supaya user gak perlu hitung manual baris mana yang keberapa.
+    function renumberItemRows() {
+        itemsWrapper.querySelectorAll('[data-row]').forEach((row, idx) => {
+            const badge = row.querySelector('[data-row-number]');
+            if (badge) badge.textContent = idx + 1;
+        });
+    }
+
     function addItemRow(data = {}) {
         const node = itemRowTemplate.content.cloneNode(true);
         const row = node.querySelector('[data-row]');
@@ -518,9 +545,13 @@
                 .catch(() => {});
         });
 
-        row.querySelector('[data-remove-row]').addEventListener('click', () => row.remove());
+        row.querySelector('[data-remove-row]').addEventListener('click', () => {
+            row.remove();
+            renumberItemRows();
+        });
 
         itemsWrapper.appendChild(row);
+        renumberItemRows();
     }
 
     // ==================== Lampiran tambahan (multi-file) ====================

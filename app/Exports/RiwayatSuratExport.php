@@ -15,12 +15,16 @@ class RiwayatSuratExport implements FromCollection, WithHeadings, WithMapping, W
     protected $search;
     protected $klasifikasi;
     protected $sort;
+    protected $tanggalDari;
+    protected $tanggalSampai;
 
-    public function __construct($search = null, $klasifikasi = null, $sort = 'desc')
+    public function __construct($search = null, $klasifikasi = null, $sort = 'desc', $tanggalDari = null, $tanggalSampai = null)
     {
         $this->search = $search;
         $this->klasifikasi = $klasifikasi;
         $this->sort = $sort;
+        $this->tanggalDari = $tanggalDari;
+        $this->tanggalSampai = $tanggalSampai;
     }
 
     public function collection()
@@ -38,6 +42,14 @@ class RiwayatSuratExport implements FromCollection, WithHeadings, WithMapping, W
             $query->whereHas('klasifikasiSurat', function ($q) {
                 $q->where('kode', $this->klasifikasi);
             });
+        }
+
+        if ($this->tanggalDari) {
+            $query->whereDate('tanggal', '>=', $this->tanggalDari);
+        }
+
+        if ($this->tanggalSampai) {
+            $query->whereDate('tanggal', '<=', $this->tanggalSampai);
         }
 
         $query->orderBy('tanggal', $this->sort === 'asc' ? 'asc' : 'desc');

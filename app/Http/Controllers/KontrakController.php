@@ -30,19 +30,15 @@ class KontrakController extends Controller
             ->when($request->jenis, function ($q) use ($request) {
                 $q->where('jenis_kontrak_id', $request->jenis);
             })
-            ->latest('tanggal')
+            // Kontrak paling baru tampil paling atas. Urut berdasarkan tanggal kontrak
+            // dulu, lalu id sebagai tie-breaker supaya kontrak dengan tanggal yang sama
+            // tetap konsisten menampilkan yang terakhir dibuat di paling atas.
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 
         $jenisList = JenisKontrak::orderBy('nama_jenis')->get();
-
-        // BARU: kalau dipanggil lewat fetch() (pencarian instan di frontend),
-        // balikin partial tabelnya doang - bukan seluruh halaman dengan
-        // header/layout/dsb. Deteksi dari header X-Requested-With yang
-        // dikirim otomatis oleh fetch() di index.blade.php.
-        if ($request->ajax()) {
-            return view('kontrak.partials.results', compact('kontrakList'))->render();
-        }
 
         return view('kontrak.index', compact('kontrakList', 'jenisList'));
     }

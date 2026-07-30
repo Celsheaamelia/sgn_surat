@@ -119,9 +119,36 @@
        Toolbar — same input styling language as Tambah Surat's form fields
        ========================================================================== */
 
+    .ledger-help {
+        color: var(--ink-soft);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .ledger-btn-ghost {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--ink-soft);
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-radius: 0.55rem;
+        padding: 0.65rem 0.95rem;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ledger-btn-ghost:hover {
+        background: var(--ledger);
+        border-color: var(--ledger-line);
+        color: var(--ink);
+    }
+
     #searchInput,
     #filterKlasifikasi,
-    #sortOrder {
+    #sortOrder,
+    #filterTanggalDari,
+    #filterTanggalSampai {
         font-family: var(--font-body);
         color: var(--ink);
         background-color: var(--paper);
@@ -145,7 +172,9 @@
 
     #searchInput:focus,
     #filterKlasifikasi:focus,
-    #sortOrder:focus {
+    #sortOrder:focus,
+    #filterTanggalDari:focus,
+    #filterTanggalSampai:focus {
         outline: none;
         border-color: var(--brass);
         box-shadow: 0 0 0 3px rgba(169,129,47,0.16);
@@ -153,7 +182,9 @@
 
     #searchInput:focus-visible,
     #filterKlasifikasi:focus-visible,
-    #sortOrder:focus-visible {
+    #sortOrder:focus-visible,
+    #filterTanggalDari:focus-visible,
+    #filterTanggalSampai:focus-visible {
         outline: 2px solid var(--brass-dark);
         outline-offset: 2px;
     }
@@ -482,6 +513,20 @@
                             <option value="asc">Terlama dulu</option>
                         </select>
                     </div>
+
+                    <div class="col-md-3">
+                        <label for="filterTanggalDari" class="ledger-help mb-1 d-block">Dari tanggal</label>
+                        <input type="date" id="filterTanggalDari" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filterTanggalSampai" class="ledger-help mb-1 d-block">Sampai tanggal</label>
+                        <input type="date" id="filterTanggalSampai" class="form-control">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" id="resetTanggalBtn" class="btn ledger-btn-ghost w-100">
+                            Reset Tanggal
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -573,6 +618,9 @@
     const searchInput = document.getElementById('searchInput');
     const filterKlasifikasi = document.getElementById('filterKlasifikasi');
     const sortOrder = document.getElementById('sortOrder');
+    const filterTanggalDari = document.getElementById('filterTanggalDari');
+    const filterTanggalSampai = document.getElementById('filterTanggalSampai');
+    const resetTanggalBtn = document.getElementById('resetTanggalBtn');
     const archiveList = document.getElementById('archiveList');
     const emptySearchState = document.getElementById('emptySearchState');
     const totalCount = document.getElementById('totalCount');
@@ -613,6 +661,8 @@
 
         const query = searchInput.value.trim().toLowerCase();
         const klasifikasi = filterKlasifikasi.value;
+        const tanggalDari = filterTanggalDari.value; // format YYYY-MM-DD, cocok buat dibandingkan string langsung
+        const tanggalSampai = filterTanggalSampai.value;
         const rows = Array.from(archiveList.querySelectorAll('tr'));
 
         let visibleCount = 0;
@@ -622,7 +672,12 @@
                 row.dataset.nomor.includes(query) ||
                 row.dataset.perihal.includes(query);
             const matchKlasifikasi = !klasifikasi || row.dataset.klasifikasi === klasifikasi;
-            const visible = matchQuery && matchKlasifikasi;
+
+            const rowTanggal = (row.dataset.tanggal || '').slice(0, 10);
+            const matchTanggalDari = !tanggalDari || (rowTanggal && rowTanggal >= tanggalDari);
+            const matchTanggalSampai = !tanggalSampai || (rowTanggal && rowTanggal <= tanggalSampai);
+
+            const visible = matchQuery && matchKlasifikasi && matchTanggalDari && matchTanggalSampai;
 
             row.classList.toggle('d-none', !visible);
             if (visible) visibleCount++;
@@ -655,8 +710,18 @@
     if (searchInput) {
         searchInput.addEventListener('input', applyFilters);
         filterKlasifikasi.addEventListener('change', applyFilters);
+        filterTanggalDari.addEventListener('change', applyFilters);
+        filterTanggalSampai.addEventListener('change', applyFilters);
         sortOrder.addEventListener('change', () => {
             applySort();
+            applyFilters();
+        });
+    }
+
+    if (resetTanggalBtn) {
+        resetTanggalBtn.addEventListener('click', () => {
+            filterTanggalDari.value = '';
+            filterTanggalSampai.value = '';
             applyFilters();
         });
     }
@@ -690,6 +755,12 @@
             }
             if (sortOrder && sortOrder.value) {
                 params.set('sort', sortOrder.value);
+            }
+            if (filterTanggalDari && filterTanggalDari.value) {
+                params.set('tanggal_dari', filterTanggalDari.value);
+            }
+            if (filterTanggalSampai && filterTanggalSampai.value) {
+                params.set('tanggal_sampai', filterTanggalSampai.value);
             }
 
             const exportUrl = `{{ route('surat.export') }}?${params.toString()}`;
