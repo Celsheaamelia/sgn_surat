@@ -22,6 +22,12 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
  *
  * Aman dijalankan berulang kali (idempotent): karyawan di-upsert per NIK,
  * kontrak di-upsert per nomor_kontrak.
+ *
+ * CATATAN: disesuaikan dengan skema `karyawans` versi ramping (migration
+ * "inti_tabel_karyawan") — kolom jabatan/bagian/tempat_lahir/tanggal_lahir/
+ * status_karyawan SUDAH TIDAK ADA di tabel karyawans. Info jabatan & bagian
+ * sekarang hanya disimpan di tabel kontraks (jabatan_kontrak, bagian_kontrak),
+ * karena bisa beda tiap kontrak untuk karyawan yang sama.
  */
 class ImportKontrakExcel extends Command
 {
@@ -120,20 +126,17 @@ class ImportKontrakExcel extends Command
                 continue;
             }
 
-            // ===== Upsert Karyawan =====
-            [$tempatLahir, $tanggalLahir] = $this->resolveTempatTanggalLahir($get);
+            // ===== Upsert Karyawan (kolom identitas inti saja) =====
+            $tempatTanggalLahir = $this->resolveTempatTanggalLahir($get);
 
             $karyawanPayload = array_filter([
-                'no_ktp'            => $this->cleanText($get('NO KTP')),
-                'nama'              => $nama,
-                'jabatan'           => $this->cleanText($get('JABATAN')),
-                'departemen'        => $this->cleanText($get('BAGIAN')),
-                'tempat_lahir'      => $tempatLahir,
-                'tanggal_lahir'     => $tanggalLahir,
-                'jenis_kelamin'     => $this->normalizeJenisKelamin($get('JENIS KELAMIN')),
-                'agama'             => $this->cleanText($get('AGAMA')),
-                'status_perkawinan' => $this->cleanText($get('STATUS PERKAWINAN')),
-                'alamat'            => $this->cleanText($get('ALAMAT LENGKAP')),
+                'no_ktp'               => $this->cleanText($get('NO KTP')),
+                'nama'                 => $nama,
+                'tempat_tanggal_lahir' => $tempatTanggalLahir,
+                'jenis_kelamin'        => $this->normalizeJenisKelamin($get('JENIS KELAMIN')),
+                'agama'                => $this->cleanText($get('AGAMA')),
+                'status_perkawinan'    => $this->cleanText($get('STATUS PERKAWINAN')),
+                'alamat'               => $this->cleanText($get('ALAMAT LENGKAP')),
             ], fn ($v) => $v !== null && $v !== '');
 
             $karyawan = Karyawan::where('nik', $nik)->first();
@@ -143,13 +146,13 @@ class ImportKontrakExcel extends Command
                 $countKaryawanUpdate++;
             } else {
                 $karyawan = Karyawan::create(array_merge(
-                    ['nik' => $nik, 'status_karyawan' => 'Aktif'],
+                    ['nik' => $nik],
                     $karyawanPayload
                 ));
                 $countKaryawanBaru++;
             }
 
-            // ===== Upsert Kontrak =====
+            // ===== Upsert Kontrak (jabatan/bagian/rincian pekerjaan hidup di sini) =====
             $tanggalKontrak = $this->extractTanggalFromNomor($nomorKontrak)
                 ?? $this->parseIndonesianDate($get('PERIODE KONTRAK DARI'))
                 ?? now();
@@ -166,8 +169,8 @@ class ImportKontrakExcel extends Command
                 'penandatangan_id'    => null,
                 'tanggal_mulai'       => $tanggalMulai->toDateString(),
                 'tanggal_selesai'     => $tanggalSelesai?->toDateString(),
-                'jabatan_kontrak'     => $this->cleanText($get('JABATAN')) ?? $karyawan->jabatan,
-                'bagian_kontrak'      => $this->cleanText($get('BAGIAN')) ?? $karyawan->departemen,
+                'jabatan_kontrak'     => $this->cleanText($get('JABATAN')),
+                'bagian_kontrak'      => $this->cleanText($get('BAGIAN')),
                 'rincian_pekerjaan_1' => $this->cleanText($get('RINCIAN PEKERJAAN 1')),
                 'rincian_pekerjaan_2' => $this->cleanText($get('RINCIAN PEKERJAAN 2')),
                 'rincian_pekerjaan_3' => $this->cleanText($get('RINCIAN PEKERJAAN 3')),
@@ -233,6 +236,9 @@ class ImportKontrakExcel extends Command
         if ($value === null) {
             return null;
         }
+        if ($value instanceof Carbon) {
+            return $value->toDateString();
+        }
         $value = trim((string) $value);
         if ($value === '' || $value === '-') {
             return null;
@@ -267,38 +273,30 @@ class ImportKontrakExcel extends Command
     }
 
     /**
-     * Ambil tempat & tanggal lahir. Prioritaskan kolom terpisah (TEMPAT LAHIR
-     * + TANGGAL LAHIR) kalau ada; kalau tidak, pecah kolom gabungan
-     * "TEMPAT TANGGAL LAHIR" (format umum: "Kota / D Bulan YYYY" atau
-     * "Kota, DD/MM/YYYY").
-     *
-     * @return array{0: ?string, 1: ?\Illuminate\Support\Carbon}
+     * Ambil string "tempat, tanggal lahir" apa adanya, sesuai kolom yang
+     * tersedia di file. Prioritas: kolom gabungan "TEMPAT TANGGAL LAHIR"
+     * (format aslinya dipakai apa adanya, sama seperti karyawan_import.csv).
+     * Kalau tidak ada, coba gabungkan dari "TEMPAT LAHIR" + "TANGGAL LAHIR".
      */
-    private function resolveTempatTanggalLahir(callable $get): array
+    private function resolveTempatTanggalLahir(callable $get): ?string
     {
+        $gabungan = $this->cleanText($get('TEMPAT TANGGAL LAHIR'));
+        if ($gabungan) {
+            return $gabungan;
+        }
+
         $tempatLahir = $this->cleanText($get('TEMPAT LAHIR'));
         $tanggalLahirRaw = $get('TANGGAL LAHIR');
 
         if ($tempatLahir && $tanggalLahirRaw) {
-            $tanggal = $tanggalLahirRaw instanceof Carbon
-                ? $tanggalLahirRaw
-                : $this->parseIndonesianDate($tanggalLahirRaw);
+            $tanggalText = $tanggalLahirRaw instanceof Carbon
+                ? $tanggalLahirRaw->translatedFormat('d F Y')
+                : (string) $tanggalLahirRaw;
 
-            return [$tempatLahir, $tanggal];
+            return "{$tempatLahir} / {$tanggalText}";
         }
 
-        $gabungan = $this->cleanText($get('TEMPAT TANGGAL LAHIR'));
-        if (!$gabungan) {
-            return [$tempatLahir, null];
-        }
-
-        if (preg_match('/^(.*?)\s*[\/,]\s*(.+)$/', $gabungan, $m)) {
-            $tempat = trim($m[1]);
-            $tanggal = $this->parseIndonesianDate(trim($m[2]));
-            return [$tempat ?: $tempatLahir, $tanggal];
-        }
-
-        return [$gabungan, null];
+        return $tempatLahir;
     }
 
     /**
