@@ -21,18 +21,12 @@
                 $manajemenSuratActive = request()->routeIs('tambahsurat') || request()->routeIs('keepnomorsurat') || request()->routeIs('riwayatsurat');
             @endphp
             <li class="nav-group">
-                <a href="#manajemenSuratMenu"
-                   class="nav-link nav-link-parent {{ $manajemenSuratActive ? 'active' : '' }}"
-                   data-bs-toggle="collapse"
-                   role="button"
-                   aria-expanded="{{ $manajemenSuratActive ? 'true' : 'false' }}"
-                   aria-controls="manajemenSuratMenu">
+                <div class="nav-link nav-link-parent nav-link-static {{ $manajemenSuratActive ? 'active' : '' }}">
                     <i class="bi bi-file-earmark-text"></i>
                     <span>Manajemen Surat</span>
-                    <i class="bi bi-chevron-down nav-caret"></i>
-                </a>
+                </div>
 
-                <div class="collapse {{ $manajemenSuratActive ? 'show' : '' }}" id="manajemenSuratMenu">
+                <div id="manajemenSuratMenu">
                     <ul class="nav-submenu">
                         <li>
                             <a href="{{ route('tambahsurat') }}"
@@ -63,18 +57,12 @@
                 $manajemenKontrakActive = request()->routeIs('kontrak.*') || request()->routeIs('karyawan.*');
             @endphp
             <li class="nav-group">
-                <a href="#manajemenKontrakMenu"
-                   class="nav-link nav-link-parent {{ $manajemenKontrakActive ? 'active' : '' }}"
-                   data-bs-toggle="collapse"
-                   role="button"
-                   aria-expanded="{{ $manajemenKontrakActive ? 'true' : 'false' }}"
-                   aria-controls="manajemenKontrakMenu">
+                <div class="nav-link nav-link-parent nav-link-static {{ $manajemenKontrakActive ? 'active' : '' }}">
                     <i class="bi bi-file-earmark-ruled"></i>
                     <span>Manajemen Kontrak</span>
-                    <i class="bi bi-chevron-down nav-caret"></i>
-                </a>
+                </div>
 
-                <div class="collapse {{ $manajemenKontrakActive ? 'show' : '' }}" id="manajemenKontrakMenu">
+                <div id="manajemenKontrakMenu">
                     <ul class="nav-submenu">
                         <li>
                             <a href="{{ route('kontrak.create') }}"
@@ -101,16 +89,12 @@
                 </div>
             </li>
 
-            <li>
-                <a href="#arsipSppSubmenu" data-bs-toggle="collapse" role="button"
-                   aria-expanded="{{ request()->routeIs('arsipkasbon.*') ? 'true' : 'false' }}"
-                   aria-controls="arsipSppSubmenu"
-                   class="nav-link nav-link-parent {{ request()->routeIs('arsipkasbon.*') ? 'active' : '' }}">
+            <li class="nav-group">
+                <div class="nav-link nav-link-parent nav-link-static {{ request()->routeIs('arsipkasbon.*') ? 'active' : '' }}">
                     <i class="bi bi-receipt"></i>
                     <span class="flex-grow-1">Surat Permintaan Pembayaran</span>
-                    <i class="bi bi-chevron-down nav-caret"></i>
-                </a>
-                <div class="collapse {{ request()->routeIs('arsipkasbon.*') ? 'show' : '' }}" id="arsipSppSubmenu">
+                </div>
+                <div id="arsipSppSubmenu">
                     <ul class="nav-submenu">
                         <li>
                             <a href="{{ route('arsipkasbon.create') }}"
@@ -232,6 +216,10 @@
         transform: translateX(2px);
     }
 
+    .nav-link-static:hover {
+        transform: none;
+    }
+
     .nav-link.active {
         background: linear-gradient(135deg, #10b981, #047857);
         color: white;
@@ -250,18 +238,11 @@
     }
 
     .nav-link-parent {
-        cursor: pointer;
+        cursor: default;
     }
 
-    .nav-caret {
-        font-size: 0.75rem !important;
-        width: auto !important;
-        margin-left: auto;
-        transition: transform 0.2s ease;
-    }
-
-    .nav-link-parent[aria-expanded="true"] .nav-caret {
-        transform: rotate(180deg);
+    .nav-link-static {
+        margin-bottom: 0.1rem;
     }
 
     .nav-submenu {
@@ -351,39 +332,3 @@
         }
     }
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const collapseIds = ['manajemenSuratMenu', 'arsipSppSubmenu'];
-
-    collapseIds.forEach(function (id) {
-        const collapseEl = document.getElementById(id);
-        if (!collapseEl) return;
-
-        const triggerEl = document.querySelector(`[data-bs-target="#${id}"], [href="#${id}"]`);
-        const storageKey = `sidebar-open-${id}`;
-        const savedState = localStorage.getItem(storageKey);
-
-        // Buat instance Collapse Bootstrap secara eksplisit, TANPA auto-toggle saat inisialisasi
-        const bsCollapse = new bootstrap.Collapse(collapseEl, { toggle: false });
-
-        // Terapkan status tersimpan lewat API resmi Bootstrap (bukan classList manual)
-        if (savedState === 'true') {
-            bsCollapse.show();
-            if (triggerEl) triggerEl.setAttribute('aria-expanded', 'true');
-        } else if (savedState === 'false') {
-            bsCollapse.hide();
-            if (triggerEl) triggerEl.setAttribute('aria-expanded', 'false');
-        }
-        // Kalau savedState null (belum pernah disimpan), biarkan default dari server apa adanya
-
-        // Simpan status setiap kali collapse dibuka/ditutup oleh interaksi user
-        collapseEl.addEventListener('shown.bs.collapse', function () {
-            localStorage.setItem(storageKey, 'true');
-        });
-        collapseEl.addEventListener('hidden.bs.collapse', function () {
-            localStorage.setItem(storageKey, 'false');
-        });
-    });
-});
-</script>
