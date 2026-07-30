@@ -25,7 +25,7 @@ class JenisKontrakSeeder extends Seeder
                 'kode'          => 'PKWT-LMG',
                 'kode_nomor'    => 'KTR',
                 'nama_jenis'    => 'PKWT Luar/Dalam Masa Giling (LMG-DMG, 12 Bulan)',
-                'nama_singkat'  => 'PKWT',
+                'nama_singkat'  => 'PKWT DMG-LMG',
                 'masa_giling'   => false,
                 'masa_berlaku_bulan' => 12,
                 'gaji_pokok_default' => 2578320,
