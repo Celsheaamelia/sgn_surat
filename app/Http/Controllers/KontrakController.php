@@ -40,6 +40,14 @@ class KontrakController extends Controller
 
         $jenisList = JenisKontrak::orderBy('nama_jenis')->get();
 
+        // BARU: kalau dipanggil lewat fetch() (pencarian instan di frontend),
+        // balikin partial tabelnya doang - bukan seluruh halaman dengan
+        // header/layout/dsb. Deteksi dari header X-Requested-With yang
+        // dikirim otomatis oleh fetch() di index.blade.php.
+        if ($request->ajax()) {
+            return view('kontrak.partials.results', compact('kontrakList'))->render();
+        }
+
         return view('kontrak.index', compact('kontrakList', 'jenisList'));
     }
 
