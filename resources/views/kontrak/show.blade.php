@@ -85,7 +85,13 @@
                             <dd class="col-sm-8">{{ $kontrak->jenisKontrak->nama_jenis }}</dd>
 
                             <dt class="col-sm-4 ledger-subtitle">Penandatangan</dt>
-                            <dd class="col-sm-8">{{ $kontrak->penandatangan->jabatan }} ({{ $kontrak->penandatangan->kode }})</dd>
+                            <dd class="col-sm-8">
+                                @if ($kontrak->penandatangan)
+                                    {{ $kontrak->penandatangan->jabatan }} ({{ $kontrak->penandatangan->kode }})
+                                @else
+                                    <span class="ledger-subtitle">Belum ditentukan</span>
+                                @endif
+                            </dd>
 
                             <dt class="col-sm-4 ledger-subtitle">Periode</dt>
                             <dd class="col-sm-8">
