@@ -30,7 +30,17 @@ class KaryawanController extends Controller
     public function index(Request $request)
     {
         $karyawanList = Karyawan::query()
+            ->with(['latestKontrak.jenisKontrak'])
             ->when($request->search, fn ($q) => $this->applySearch($q, $request->search))
+            // Filter status kepegawaian (PKWT DMG saja / PKWT DMG-LMG 12 bulan),
+            // dicek dari jenis_kontrak kontrak PALING BARU milik karyawan --
+            // bukan kolom manual, biar konsisten sama data yang diimpor dari Excel.
+            ->when($request->status_kontrak, function ($q) use ($request) {
+                $masaGiling = $request->status_kontrak === 'dmg';
+                $q->whereHas('latestKontrak.jenisKontrak', function ($qq) use ($masaGiling) {
+                    $qq->where('masa_giling', $masaGiling);
+                });
+            })
             ->orderBy('nama')
             ->paginate(10)
             ->withQueryString();

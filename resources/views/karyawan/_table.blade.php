@@ -9,11 +9,15 @@
                     <th>No. KTP</th>
                     <th>Tempat, Tanggal Lahir</th>
                     <th>Agama</th>
+                    <th>Status</th>
                     <th class="text-end">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($karyawanList as $k)
+                    @php
+                        $jenisKontrakTerakhir = $k->latestKontrak->jenisKontrak ?? null;
+                    @endphp
                     <tr>
                         <td class="ledger-tanggal">{{ $karyawanList->firstItem() + $loop->index }}</td>
                         <td class="ledger-tanggal">{{ $k->nik }}</td>
@@ -21,6 +25,15 @@
                         <td class="ledger-tanggal">{{ $k->no_ktp ?? '-' }}</td>
                         <td class="ledger-tujuan">{{ $k->tempat_tanggal_lahir ?? '-' }}</td>
                         <td class="ledger-tujuan">{{ $k->agama ?? '-' }}</td>
+                        <td>
+                            @if ($jenisKontrakTerakhir)
+                                <span class="ledger-status-pill {{ $jenisKontrakTerakhir->masa_giling ? 'is-draft' : 'is-active' }}">
+                                    {{ $jenisKontrakTerakhir->nama_singkat ?: $jenisKontrakTerakhir->nama_jenis }}
+                                </span>
+                            @else
+                                <span class="ledger-subtitle">-</span>
+                            @endif
+                        </td>
                         <td class="text-end">
                             <div class="d-flex gap-2 justify-content-end">
                                 <a href="{{ route('karyawan.edit', $k) }}" class="btn ledger-btn-detail" title="Edit">
@@ -39,8 +52,8 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 ledger-subtitle">
-                            {{ request('search') ? 'Tidak ada karyawan yang cocok dengan pencarian.' : 'Belum ada data karyawan.' }}
+                        <td colspan="8" class="text-center py-4 ledger-subtitle">
+                            {{ (request('search') || request('status_kontrak')) ? 'Tidak ada karyawan yang cocok dengan pencarian/filter.' : 'Belum ada data karyawan.' }}
                         </td>
                     </tr>
                 @endforelse

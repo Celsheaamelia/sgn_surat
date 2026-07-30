@@ -23,4 +23,14 @@ class Karyawan extends Model
     {
         return $this->hasMany(Kontrak::class);
     }
+
+    /**
+     * Kontrak paling baru milik karyawan ini (berdasarkan tanggal kontrak),
+     * dipakai buat nampilin status kepegawaian (PKWT DMG / PKWT DMG-LMG)
+     * di tabel Data Karyawan tanpa perlu isi kolom terpisah secara manual.
+     */
+    public function latestKontrak()
+    {
+        return $this->hasOne(Kontrak::class)->latestOfMany('tanggal');
+    }
 }

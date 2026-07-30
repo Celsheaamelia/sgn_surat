@@ -21,11 +21,22 @@
             </a>
         </div>
 
-        <div class="ledger-toolbar mb-3 position-relative">
-            <input type="text" id="karyawanLiveSearch" value="{{ request('search') }}" class="form-control"
-                   placeholder="Ketik nama / NIK / No. KTP..." autocomplete="off">
-            <div class="spinner-border spinner-border-sm text-secondary position-absolute d-none"
-                 id="karyawanSearchSpinner" style="right: 0.9rem; top: 0.65rem;" role="status"></div>
+        <div class="row g-2 mb-3">
+            <div class="col-md-8">
+                <div class="ledger-toolbar position-relative mb-0">
+                    <input type="text" id="karyawanLiveSearch" value="{{ request('search') }}" class="form-control"
+                           placeholder="Ketik nama / NIK / No. KTP..." autocomplete="off">
+                    <div class="spinner-border spinner-border-sm text-secondary position-absolute d-none"
+                         id="karyawanSearchSpinner" style="right: 0.9rem; top: 0.65rem;" role="status"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="karyawanStatusFilter" class="form-select">
+                    <option value="">Semua Status</option>
+                    <option value="dmg" @selected(request('status_kontrak') === 'dmg')>PKWT DMG (Musim Giling)</option>
+                    <option value="lmg" @selected(request('status_kontrak') === 'lmg')>PKWT DMG-LMG (12 Bulan)</option>
+                </select>
+            </div>
         </div>
 
         <div id="karyawanTableWrap">
@@ -39,16 +50,22 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('karyawanLiveSearch');
+    const statusFilter = document.getElementById('karyawanStatusFilter');
     const wrap = document.getElementById('karyawanTableWrap');
     const spinner = document.getElementById('karyawanSearchSpinner');
     const baseUrl = "{{ route('karyawan.index') }}";
     let debounceTimer = null;
     let currentRequest = null;
 
-    async function runSearch(q, pushUrl = true) {
+    async function runSearch(pushUrl = true) {
         spinner.classList.remove('d-none');
 
-        const url = q ? `${baseUrl}?search=${encodeURIComponent(q)}` : baseUrl;
+        const params = new URLSearchParams();
+        const q = input.value.trim();
+        if (q) params.set('search', q);
+        if (statusFilter.value) params.set('status_kontrak', statusFilter.value);
+
+        const url = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
 
         if (pushUrl) {
             window.history.replaceState({}, '', url);
@@ -78,7 +95,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     input.addEventListener('input', function () {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => runSearch(this.value.trim()), 300);
+        debounceTimer = setTimeout(() => runSearch(), 300);
+    });
+
+    statusFilter.addEventListener('change', function () {
+        runSearch();
     });
 
     // Klik link paginasi di dalam tabel tetap jalan normal (reload halaman biasa).
