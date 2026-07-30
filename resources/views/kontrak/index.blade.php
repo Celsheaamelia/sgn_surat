@@ -27,93 +27,92 @@
             </a>
         </div>
 
-        <form method="GET" class="ledger-toolbar row g-2 mb-3">
-            <div class="col-md-5">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control"
+        <div class="ledger-toolbar row g-2 mb-3">
+            <div class="col-md-7">
+                <input type="text" id="searchInput" value="{{ request('search') }}" class="form-control"
                        placeholder="Cari nomor kontrak / nama / NIK karyawan...">
             </div>
-            <div class="col-md-4">
-                <select name="jenis" class="form-select">
+            <div class="col-md-5">
+                <select id="jenisFilter" class="form-select">
                     <option value="">Semua Jenis Kontrak</option>
                     @foreach ($jenisList as $jenis)
                         <option value="{{ $jenis->id }}" @selected(request('jenis') == $jenis->id)>{{ $jenis->nama_jenis }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn ledger-btn-brass flex-fill">Cari</button>
-                <a href="{{ route('kontrak.index') }}" class="btn ledger-btn-ghost">Reset</a>
-            </div>
-        </form>
+        </div>
 
-        <div class="card ledger-card">
-            <div class="card-body p-0">
-                <table class="table ledger-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Nomor Kontrak</th>
-                            <th>Karyawan</th>
-                            <th>Jenis</th>
-                            <th>Periode</th>
-                            <th>Status</th>
-                            <th class="text-end">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($kontrakList as $kontrak)
-                            @php
-                                $statusClass = match($kontrak->status) {
-                                    'Aktif' => 'is-active',
-                                    'Selesai' => 'is-done',
-                                    'Direservasi' => 'is-reserved',
-                                    default => 'is-draft',
-                                };
-                            @endphp
-                            <tr>
-                                <td class="ledger-nomor">{{ $kontrak->nomor_kontrak }}</td>
-                                <td>
-                                    <div class="ledger-perihal">{{ $kontrak->karyawan->nama ?? '-' }}</div>
-                                    <div class="ledger-help mb-0">{{ $kontrak->karyawan->nik ?? '-' }}</div>
-                                </td>
-                                <td class="ledger-tujuan">{{ $kontrak->jenisKontrak->nama_jenis ?? '-' }}</td>
-                                <td class="ledger-tanggal">
-                                    {{ optional($kontrak->tanggal_mulai)->format('d/m/Y') }}
-                                    &ndash;
-                                    {{ $kontrak->tanggal_selesai ? $kontrak->tanggal_selesai->format('d/m/Y') : 'Tetap' }}
-                                </td>
-                                <td><span class="ledger-status-pill {{ $statusClass }}">{{ $kontrak->status }}</span></td>
-                                <td class="text-end">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        @if ($kontrak->generated_file_path)
-                                            <a href="{{ route('kontrak.download', $kontrak) }}" class="btn ledger-btn-detail" title="Download dokumen Word">
-                                                <i class="bi bi-file-earmark-word"></i>
-                                            </a>
-                                        @endif
-                                        <a href="{{ route('kontrak.upload.form', $kontrak) }}" class="btn ledger-btn-detail" title="Upload / lihat kontrak bertanda tangan">
-                                            <i class="bi bi-upload"></i>
-                                        </a>
-                                        <a href="{{ route('kontrak.show', $kontrak) }}" class="btn ledger-btn-detail" title="Detail">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-4 ledger-subtitle">Belum ada kontrak yang dibuat.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            @if ($kontrakList->hasPages())
-                <div class="card-body">
-                    {{ $kontrakList->links() }}
-                </div>
-            @endif
+        <div id="resultsContainer" style="transition: opacity 0.15s ease;">
+            @include('kontrak.partials.results')
         </div>
 
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const searchInput = document.getElementById('searchInput');
+    const jenisFilter = document.getElementById('jenisFilter');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const indexUrl = '{{ route('kontrak.index') }}';
+
+    let debounceTimer = null;
+
+    function currentParams() {
+        const params = new URLSearchParams();
+        if (searchInput.value.trim()) params.set('search', searchInput.value.trim());
+        if (jenisFilter.value) params.set('jenis', jenisFilter.value);
+        return params;
+    }
+
+    function attachPaginationHandlers() {
+        resultsContainer.querySelectorAll('.pagination a.page-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const url = new URL(this.href);
+                fetchResults(url.searchParams.get('page'));
+                resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    }
+
+    function fetchResults(page) {
+        const params = currentParams();
+        if (page) params.set('page', page);
+
+        resultsContainer.style.opacity = '0.45';
+
+        fetch(`${indexUrl}?${params.toString()}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+        .then(r => r.text())
+        .then(html => {
+            resultsContainer.innerHTML = html;
+            resultsContainer.style.opacity = '1';
+            attachPaginationHandlers();
+
+            const qs = params.toString();
+            const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+            history.replaceState(null, '', newUrl);
+        })
+        .catch(() => {
+            resultsContainer.style.opacity = '1';
+        });
+    }
+
+    // Cari langsung tiap huruf diketik (debounce dikit biar nggak nembak
+    // request tiap 1 huruf pas ngetik cepat)
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchResults(), 300);
+    });
+
+    jenisFilter.addEventListener('change', () => fetchResults());
+
+    attachPaginationHandlers();
+})();
+</script>
+@endpush
 
 @endsection

@@ -32,8 +32,29 @@
                     </div>
                     <div class="card-body">
                         <dl class="row mb-0">
-                            <dt class="col-sm-4 ledger-subtitle">Karyawan</dt>
-                            <dd class="col-sm-8">{{ $kontrak->karyawan->nama }} ({{ $kontrak->karyawan->nik }})</dd>
+                            <dt class="col-sm-4 ledger-subtitle">Nama</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->nama }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">NIK Karyawan</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->nik }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">No. KTP</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->no_ktp ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Tempat/Tanggal Lahir</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->tempat_tanggal_lahir ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Jenis Kelamin</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->jenis_kelamin ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Agama</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->agama ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Status Perkawinan</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->status_perkawinan ?: '-' }}</dd>
+
+                            <dt class="col-sm-4 ledger-subtitle">Alamat</dt>
+                            <dd class="col-sm-8">{{ $kontrak->karyawan->alamat ?: '-' }}</dd>
 
                             <dt class="col-sm-4 ledger-subtitle">Jabatan</dt>
                             <dd class="col-sm-8">{{ $kontrak->jabatan_kontrak ?: '-' }}</dd>
@@ -70,7 +91,13 @@
                             <dd class="col-sm-8">
                                 {{ $kontrak->tanggal_mulai->format('d F Y') }}
                                 &ndash;
-                                {{ $kontrak->tanggal_selesai ? $kontrak->tanggal_selesai->format('d F Y') : 'Tidak ditentukan (tetap)' }}
+                                @if ($kontrak->tanggal_selesai)
+                                    {{ $kontrak->tanggal_selesai->format('d F Y') }}
+                                @elseif ($kontrak->jenisKontrak->masa_giling)
+                                    Sampai dengan berakhirnya Masa Giling
+                                @else
+                                    Tidak ditentukan (tetap)
+                                @endif
                             </dd>
 
                             <dt class="col-sm-4 ledger-subtitle">Tanggal Dibuat</dt>
