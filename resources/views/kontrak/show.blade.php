@@ -133,9 +133,9 @@
                             </button>
                         </form>
 
-                        <a href="{{ route('kontrak.upload.form', $kontrak) }}" class="btn ledger-btn-ghost w-100">
+                        {{-- <a href="{{ route('kontrak.upload.form', $kontrak) }}" class="btn ledger-btn-ghost w-100">
                             <i class="bi bi-upload me-1"></i> Kelola File Bertanda Tangan
-                        </a>
+                        </a> --}}
                     </div>
                 </div>
             </div>

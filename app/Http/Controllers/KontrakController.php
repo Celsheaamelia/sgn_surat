@@ -15,7 +15,7 @@ use App\Support\IndonesianDate;
 
 class KontrakController extends Controller
 {
-    use NomorKontrakUrut;
+    use NomorUrut;
 
     public function index(Request $request)
     {
@@ -30,9 +30,7 @@ class KontrakController extends Controller
             ->when($request->jenis, function ($q) use ($request) {
                 $q->where('jenis_kontrak_id', $request->jenis);
             })
-            // Kontrak paling baru tampil paling atas. Urut berdasarkan tanggal kontrak
-            // dulu, lalu id sebagai tie-breaker supaya kontrak dengan tanggal yang sama
-            // tetap konsisten menampilkan yang terakhir dibuat di paling atas.
+
             ->orderByDesc('tanggal')
             ->orderByDesc('id')
             ->paginate(10)
@@ -40,10 +38,6 @@ class KontrakController extends Controller
 
         $jenisList = JenisKontrak::orderBy('nama_jenis')->get();
 
-        // BARU: kalau dipanggil lewat fetch() (pencarian instan di frontend),
-        // balikin partial tabelnya doang - bukan seluruh halaman dengan
-        // header/layout/dsb. Deteksi dari header X-Requested-With yang
-        // dikirim otomatis oleh fetch() di index.blade.php.
         if ($request->ajax()) {
             return view('kontrak.partials.results', compact('kontrakList'))->render();
         }
@@ -56,10 +50,8 @@ class KontrakController extends Controller
         $jenisList = JenisKontrak::orderBy('nama_jenis')->get();
 
         $tanggal = now()->toDateString();
-        $defaultJenis = $jenisList->first();
-        $nextSequence = $defaultJenis
-            ? $this->nextAvailableContractSequence($tanggal, $defaultJenis->kode_nomor ?: $defaultJenis->kode)
-            : 1;
+
+        $nextSequence = $this->nextAvailableSequence($tanggal);
 
         $penandatangan = $this->resolveDefaultPenandatangan();
 
@@ -87,23 +79,19 @@ class KontrakController extends Controller
         $jenisKontrak  = JenisKontrak::findOrFail($request->jenis_kontrak_id);
         $penandatangan = $this->resolveDefaultPenandatangan();
 
-        // Tanggal Selesai wajib diisi manual HANYA untuk jenis kontrak yang
-        // bukan masa giling (KTR / 12 bulan). Untuk PJJ/masa giling, selesainya
-        // otomatis "sampai berakhirnya Masa Giling" - tidak boleh diisi tanggal
-        // tetap secara manual di form.
         if (!$jenisKontrak->masa_giling && !$request->tanggal_selesai) {
             return back()->withInput()->with('error',
                 'Tanggal Selesai wajib diisi untuk jenis kontrak ' . ($jenisKontrak->nama_singkat ?: $jenisKontrak->nama_jenis) . '.'
             );
         }
 
-        $kodeNomor = $jenisKontrak->kode_nomor ?: $jenisKontrak->kode;
-        $nomorInt  = (int) $request->nomor_urut;
-        $grouped   = $this->groupedUsedContractNumbersForDate($request->tanggal, $kodeNomor);
+        $nomorInt = (int) $request->nomor_urut;
+
+        $grouped = $this->groupedUsedNumbersForDate($request->tanggal);
 
         if (in_array($nomorInt, $grouped['terpakai'])) {
             return back()->withInput()->with('error',
-                'Nomor #' . str_pad($nomorInt, 3, '0', STR_PAD_LEFT) . ' sudah dipakai untuk kontrak lain.'
+                'Nomor #' . str_pad($nomorInt, 3, '0', STR_PAD_LEFT) . ' sudah dipakai untuk kontrak/surat lain.'
             );
         }
 
@@ -116,10 +104,6 @@ class KontrakController extends Controller
         $urut = str_pad($nomorInt, 3, '0', STR_PAD_LEFT);
 
         $nomorKontrak = $this->buildNomorKontrak($jenisKontrak, $request->tanggal, $urut);
-
-        // Masa giling (PJJ) -> tanggal_selesai memang sengaja dikosongkan di
-        // database (artinya "sampai ditetapkan berakhirnya Masa Giling").
-        // Kontrak biasa (KTR) -> tanggal_selesai wajib dari input form.
         $tanggalSelesai = $jenisKontrak->masa_giling ? null : $request->tanggal_selesai;
 
         $kontrak = Kontrak::create([
@@ -135,9 +119,6 @@ class KontrakController extends Controller
             'rincian_pekerjaan_1'  => $request->rincian_pekerjaan_1,
             'rincian_pekerjaan_2'  => $request->rincian_pekerjaan_2,
             'rincian_pekerjaan_3'  => $request->rincian_pekerjaan_3,
-            // Gaji pokok sudah standar per jenis kontrak (lihat draft), jadi
-            // diambil otomatis dari jenis_kontraks.gaji_pokok_default -
-            // tidak lagi diinput manual lewat form.
             'gaji_pokok'           => $jenisKontrak->gaji_pokok_default,
             'catatan'              => $request->catatan,
             'status'               => 'Draft',
@@ -158,13 +139,6 @@ class KontrakController extends Controller
             ->with('created_nomor', $nomorKontrak);
     }
 
-    /**
-     * Semua kontrak SG26 ditandatangani orang yang sama (General Manager),
-     * jadi tidak perlu dipilih manual tiap kali - otomatis ambil urutan
-     * jabatan tertinggi (General Manager > Manager > Asisten Manager).
-     * Kalau suatu saat memang butuh milih manual lagi, tinggal kembalikan
-     * dropdown penandatangan_id di form dan skip method ini.
-     */
     private function resolveDefaultPenandatangan(): ?Penandatangan
     {
         return Penandatangan::orderByRaw("
@@ -177,10 +151,6 @@ class KontrakController extends Controller
         ")->first();
     }
 
-    /**
-     * Format: {prefix dari config}-{kode_nomor jenis kontrak}/{Ymd}.{urut}
-     * Contoh: SG26-PERSE-PJJ/20260508.001
-     */
     private function buildNomorKontrak(JenisKontrak $jenisKontrak, string $tanggal, string $urut): string
     {
         $prefix = config('kontrak.prefix', 'SG26-PERSE');
@@ -189,9 +159,6 @@ class KontrakController extends Controller
         return $prefix . '-' . $kodeNomor . '/' . date('Ymd', strtotime($tanggal)) . '.' . $urut;
     }
 
-    /**
-     * Isi template docx dengan data kontrak + karyawan, simpan ke storage.
-     */
     private function generateDocument(Kontrak $kontrak, DocxTemplateService $docxService): string
     {
         $kontrak->load(['karyawan', 'jenisKontrak', 'penandatangan']);
@@ -225,10 +192,10 @@ class KontrakController extends Controller
 
             'NAMA_PENANDATANGAN'        => $ttd->nama ?? $ttd->jabatan ?? '-',
             'JABATAN_PENANDATANGAN'     => $ttd->jabatan ?? '-',
-            'NO_SK_PENANDATANGAN'       => $ttd->no_sk ?? '-',
-            'TANGGAL_SK_PENANDATANGAN'  => $ttd->tanggal_sk
-                ? Carbon::parse($ttd->tanggal_sk)->format('d-m-Y')
-                : '-',
+            'NO_SK_PENANDATANGAN'       => 'BD01-KOLE-SKP/20260708.009',
+            'TANGGAL_SK_PENANDATANGAN'  => '08-07-2026',
+                // ? Carbon::parse($ttd->tanggal_sk)->format('d-m-Y')
+                // : '-',
 
             'NAMA_KARYAWAN'             => $karyawan->nama,
             'NIK_KARYAWAN'              => $karyawan->nik,
@@ -358,29 +325,24 @@ class KontrakController extends Controller
 
     public function getNextSequence(Request $request)
     {
+        // jenis_kontrak_id sengaja tidak lagi divalidasi wajib di sini -
+        // nomor urut sekarang satu rangkaian gabungan (surat + semua jenis
+        // kontrak), jadi tidak butuh info jenis kontrak buat dihitung.
         $request->validate([
-            'tanggal'          => 'required|date',
-            'jenis_kontrak_id' => 'required|exists:jenis_kontraks,id',
+            'tanggal' => 'required|date',
         ]);
 
-        $jenis = JenisKontrak::findOrFail($request->jenis_kontrak_id);
-        $kodeNomor = $jenis->kode_nomor ?: $jenis->kode;
-
         return response()->json([
-            'sequence' => str_pad($this->nextAvailableContractSequence($request->tanggal, $kodeNomor), 3, '0', STR_PAD_LEFT),
+            'sequence' => str_pad($this->nextAvailableSequence($request->tanggal), 3, '0', STR_PAD_LEFT),
         ]);
     }
 
     public function cekStatusNomor(Request $request)
     {
         $request->validate([
-            'tanggal'          => 'required|date',
-            'jenis_kontrak_id' => 'required|exists:jenis_kontraks,id',
+            'tanggal' => 'required|date',
         ]);
 
-        $jenis = JenisKontrak::findOrFail($request->jenis_kontrak_id);
-        $kodeNomor = $jenis->kode_nomor ?: $jenis->kode;
-
-        return response()->json($this->groupedUsedContractNumbersForDate($request->tanggal, $kodeNomor));
+        return response()->json($this->groupedUsedNumbersForDate($request->tanggal));
     }
 }

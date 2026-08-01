@@ -3,15 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\RiwayatSurat;
+use App\Models\Kontrak;
 
 trait NomorUrut
 {
+    /**
+     * Semua nomor urut yang udah kepake di tanggal tertentu,
+     * digabung dari RiwayatSurat DAN Kontrak (KTR + PJJ),
+     * karena semuanya berbagi satu rangkaian nomor.
+     */
     protected function usedNumbersForDate(string $tanggal): array
     {
-        return RiwayatSurat::whereDate('tanggal', $tanggal)
-            ->pluck('nomor_surat')
-            ->map(function ($nomorSurat) {
-                $parts = explode('.', $nomorSurat);
+        $suratNumbers = RiwayatSurat::whereDate('tanggal', $tanggal)
+            ->pluck('nomor_surat');
+
+        $kontrakNumbers = Kontrak::whereDate('tanggal', $tanggal)
+            ->pluck('nomor_kontrak');
+
+        return $suratNumbers
+            ->concat($kontrakNumbers)
+            ->map(function ($nomor) {
+                $parts = explode('.', $nomor);
                 return (int) end($parts);
             })
             ->unique()
@@ -27,26 +39,25 @@ trait NomorUrut
     }
 
     /**
-     * Peta nomor urut -> status, untuk tanggal tertentu.
-     * Dipakai buat bedain "sudah dipakai jadi surat" vs "masih di-keep".
+     * Peta nomor urut -> status, gabungan dari RiwayatSurat dan Kontrak.
      */
-    protected function numberStatusMapForDate(string $tanggal): array
+   protected function numberStatusMapForDate(string $tanggal): array
     {
-        return RiwayatSurat::whereDate('tanggal', $tanggal)
-            ->get(['nomor_surat', 'status'])
+        $surat = RiwayatSurat::whereDate('tanggal', $tanggal)
+            ->get(['nomor_surat as nomor', 'status']);
+
+        $kontrak = Kontrak::whereDate('tanggal', $tanggal)
+            ->get(['nomor_kontrak as nomor', 'status']);
+
+        return $surat->concat($kontrak)
             ->mapWithKeys(function ($row) {
-                $parts = explode('.', $row->nomor_surat);
+                $parts = explode('.', $row->nomor);
                 $seq = (int) end($parts);
                 return [$seq => $row->status];
             })
             ->all();
     }
 
-    /**
-     * Kelompokkan nomor yang sudah terpakai di tanggal tertentu jadi 2 grup:
-     * - terpakai: sudah jadi surat definitif (Terupload / Belum Terupload)
-     * - direservasi: masih di-keep, belum jadi surat final
-     */
     protected function groupedUsedNumbersForDate(string $tanggal): array
     {
         $map = $this->numberStatusMapForDate($tanggal);

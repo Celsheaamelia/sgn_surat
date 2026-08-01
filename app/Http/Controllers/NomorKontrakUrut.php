@@ -16,10 +16,9 @@ trait NomorKontrakUrut
      * yang terpisah, jadi urutnya harus dihitung terpisah juga per kode_nomor,
      * bukan digabung semua kontrak pada tanggal tersebut.
      */
-    protected function usedContractNumbersForDate(string $tanggal, string $kodeNomor): array
+    protected function usedContractNumbersForDate(string $tanggal): array
     {
         return Kontrak::whereDate('tanggal', $tanggal)
-            ->whereHas('jenisKontrak', fn ($q) => $q->where('kode_nomor', $kodeNomor))
             ->pluck('nomor_kontrak')
             ->map(function ($nomor) {
                 $parts = explode('.', $nomor);
@@ -30,9 +29,9 @@ trait NomorKontrakUrut
             ->all();
     }
 
-    protected function nextAvailableContractSequence(string $tanggal, string $kodeNomor): int
+    protected function nextAvailableContractSequence(string $tanggal): int
     {
-        $used = $this->usedContractNumbersForDate($tanggal, $kodeNomor);
+        $used = $this->usedContractNumbersForDate($tanggal);
 
         return $used ? max($used) + 1 : 1;
     }
@@ -42,10 +41,9 @@ trait NomorKontrakUrut
      * membedakan nomor yang sudah jadi kontrak definitif vs yang masih
      * direservasi.
      */
-    protected function contractNumberStatusMapForDate(string $tanggal, string $kodeNomor): array
+    protected function contractNumberStatusMapForDate(string $tanggal): array
     {
         return Kontrak::whereDate('tanggal', $tanggal)
-            ->whereHas('jenisKontrak', fn ($q) => $q->where('kode_nomor', $kodeNomor))
             ->get(['nomor_kontrak', 'status'])
             ->mapWithKeys(function ($row) {
                 $parts = explode('.', $row->nomor_kontrak);
@@ -57,7 +55,7 @@ trait NomorKontrakUrut
 
     protected function groupedUsedContractNumbersForDate(string $tanggal, string $kodeNomor): array
     {
-        $map = $this->contractNumberStatusMapForDate($tanggal, $kodeNomor);
+        $map = $this->contractNumberStatusMapForDate($tanggal);
 
         $terpakai = [];
         $direservasi = [];

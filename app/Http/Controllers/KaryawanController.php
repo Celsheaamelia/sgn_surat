@@ -90,22 +90,6 @@ class KaryawanController extends Controller
             ->with('success', 'Data karyawan berhasil dihapus.');
     }
 
-    /**
-     * Dipakai halaman "Buat Kontrak" untuk autofill data karyawan lewat AJAX.
-     */
-    public function search(Request $request)
-    {
-        $q = $request->get('q', '');
-
-        $result = Karyawan::query()
-            ->when($q, fn ($query) => $this->applySearch($query, $q))
-            ->orderBy('nama')
-            ->limit(15)
-            ->get(['id', 'nik', 'no_ktp', 'nama', 'tempat_tanggal_lahir', 'jenis_kelamin', 'agama', 'status_perkawinan', 'alamat']);
-
-        return response()->json($result);
-    }
-
     private function validateData(Request $request, $ignoreId = null): array
     {
         return $request->validate([
@@ -118,5 +102,38 @@ class KaryawanController extends Controller
             'status_perkawinan'     => 'nullable|string|max:30',
             'alamat'                => 'nullable|string',
         ]);
+    }
+
+    public function search(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        $result = Karyawan::query()
+            ->with('latestKontrak')
+            ->when($q, fn ($query) => $this->applySearch($query, $q))
+            ->orderBy('nama')
+            ->limit(15)
+            ->get(['id', 'nik', 'no_ktp', 'nama', 'tempat_tanggal_lahir', 'jenis_kelamin', 'agama', 'status_perkawinan', 'alamat'])
+            ->map(function ($k) {
+                return [
+                    'id'                    => $k->id,
+                    'nik'                   => $k->nik,
+                    'no_ktp'                => $k->no_ktp,
+                    'nama'                  => $k->nama,
+                    'tempat_tanggal_lahir'  => $k->tempat_tanggal_lahir,
+                    'jenis_kelamin'         => $k->jenis_kelamin,
+                    'agama'                 => $k->agama,
+                    'status_perkawinan'     => $k->status_perkawinan,
+                    'alamat'                => $k->alamat,
+                    'jenis_kontrak_id_terakhir' => $k->latestKontrak->jenis_kontrak_id ?? null,
+                    'jabatan_terakhir'      => $k->latestKontrak->jabatan_kontrak ?? null,
+                    'bagian_terakhir'       => $k->latestKontrak->bagian_kontrak ?? null,
+                    'rincian_1_terakhir'    => $k->latestKontrak->rincian_pekerjaan_1 ?? null,
+                    'rincian_2_terakhir'    => $k->latestKontrak->rincian_pekerjaan_2 ?? null,
+                    'rincian_3_terakhir'    => $k->latestKontrak->rincian_pekerjaan_3 ?? null,
+                ];
+            });
+
+        return response()->json($result);
     }
 }

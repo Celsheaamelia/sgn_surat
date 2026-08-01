@@ -29,7 +29,7 @@
                 <div class="card ledger-card h-100">
                     <div class="card-header ledger-card-header">
                         <h2 class="ledger-title">Buat Kontrak Karyawan</h2>
-                        <p class="ledger-subtitle mb-0">Cari karyawan dari database, data diri otomatis terisi ke dokumen.</p>
+                        {{-- <p class="ledger-subtitle mb-0">Cari karyawan dari database, data diri otomatis terisi ke dokumen.</p> --}}
                     </div>
 
                     <div class="card-body">
@@ -244,17 +244,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function selectKaryawan(k) {
-        karyawanIdInput.value = k.id;
-        karyawanNama.textContent = k.nama;
-        karyawanDetail.textContent = `${k.nik} · ${k.tempat_tanggal_lahir ?? '-'}`;
-        karyawanCard.classList.remove('d-none');
-        searchInput.value = k.nama;
-        previewKaryawan.textContent = k.nama;
-        resultsBox.classList.remove('show');
-    }
+    karyawanIdInput.value = k.id;
+    karyawanNama.textContent = k.nama;
+    karyawanDetail.textContent = `${k.nik} · ${k.tempat_tanggal_lahir ?? '-'}`;
+    karyawanCard.classList.remove('d-none');
+    searchInput.value = k.nama;
+    previewKaryawan.textContent = k.nama;
+    resultsBox.classList.remove('show');
 
-    // Cari per-kata: "Abd Qodir" tetap cocok dengan "Abdul Qodir" karena
-    // backend sekarang cek tiap kata terpisah (AND), bukan exact substring.
+    document.getElementById('jabatan_kontrak').value = k.jabatan_terakhir ?? '';
+    document.getElementById('bagian_kontrak').value = k.bagian_terakhir ?? '';
+    document.querySelector('[name="rincian_pekerjaan_1"]').value = k.rincian_1_terakhir ?? '';
+    document.querySelector('[name="rincian_pekerjaan_2"]').value = k.rincian_2_terakhir ?? '';
+    document.querySelector('[name="rincian_pekerjaan_3"]').value = k.rincian_3_terakhir ?? '';
+
+    if (k.jenis_kontrak_id_terakhir) {
+        const jenisSelect = document.getElementById('jenis_kontrak_id');
+        const optionExists = [...jenisSelect.options].some(opt => opt.value == k.jenis_kontrak_id_terakhir);
+        if (optionExists) {
+            jenisSelect.value = k.jenis_kontrak_id_terakhir;
+            jenisSelect.dispatchEvent(new Event('change'));
+        }
+    }
+}
+
     searchInput.addEventListener('input', function () {
         clearTimeout(searchTimer);
         const q = this.value.trim();
@@ -358,10 +371,27 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function refreshNextSequence(){
-        if(!tanggalEl.value || !jenisEl.value) return;
+    // SESUDAH — hapus ketergantungan ke jenisEl.value, karena nomor urut
+// sekarang satu rangkaian gabungan (surat + KTR + PJJ), gak lagi per jenis
+    async function loadUsedNumbers(){
+        if(!tanggalEl.value){ terpakaiNumbers = []; direservasiNumbers = []; return; }
         try{
-            const res = await fetch(`{{ route('kontrak.next-sequence') }}?tanggal=${tanggalEl.value}&jenis_kontrak_id=${jenisEl.value}`);
+            let response = await fetch(`{{ route('kontrak.cek-status-nomor') }}?tanggal=${tanggalEl.value}`);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            let data = await response.json();
+            terpakaiNumbers = data.terpakai ?? [];
+            direservasiNumbers = data.direservasi ?? [];
+        }catch(err){
+            console.log(err);
+            terpakaiNumbers = [];
+            direservasiNumbers = [];
+        }
+    }
+
+    async function refreshNextSequence(){
+        if(!tanggalEl.value) return;
+        try{
+            const res = await fetch(`{{ route('kontrak.next-sequence') }}?tanggal=${tanggalEl.value}`);
             if(!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             nomorUrut.value = parseInt(data.sequence, 10);

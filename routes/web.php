@@ -13,7 +13,6 @@ use App\Services\GeminiService;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KontrakController;
-use App\Http\Controllers\NomorKontrakUrut;
 
 Route::get('/', function () {
     return redirect()->route('login');

@@ -7,7 +7,7 @@
                     <th>Karyawan</th>
                     <th>Status</th>
                     <th>Periode</th>
-                    <th class="text-end">Aksi</th>
+                    <th class="text-end"></th>
                 </tr>
             </thead>
             <tbody>
@@ -37,9 +37,9 @@
                                         <i class="bi bi-file-earmark-word"></i>
                                     </a>
                                 @endif
-                                <a href="{{ route('kontrak.upload.form', $kontrak) }}" class="btn ledger-btn-detail" title="Upload / lihat kontrak bertanda tangan">
+                                {{-- <a href="{{ route('kontrak.upload.form', $kontrak) }}" class="btn ledger-btn-detail" title="Upload / lihat kontrak bertanda tangan">
                                     <i class="bi bi-upload"></i>
-                                </a>
+                                </a> --}}
                                 <a href="{{ route('kontrak.show', $kontrak) }}" class="btn ledger-btn-detail" title="Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>

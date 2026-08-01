@@ -20,7 +20,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <h2 class="ledger-title mb-1">Riwayat Kontrak</h2>
-                <p class="ledger-subtitle mb-0">Semua kontrak karyawan yang pernah dibuat lewat sistem.</p>
+                {{-- <p class="ledger-subtitle mb-0">Semua kontrak karyawan yang pernah dibuat lewat sistem.</p> --}}
             </div>
             <a href="{{ route('kontrak.create') }}" class="btn ledger-btn-brass">
                 <i class="bi bi-file-earmark-plus me-1"></i> Buat Kontrak
@@ -101,8 +101,6 @@
         });
     }
 
-    // Cari langsung tiap huruf diketik (debounce dikit biar nggak nembak
-    // request tiap 1 huruf pas ngetik cepat)
     searchInput.addEventListener('input', () => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => fetchResults(), 300);

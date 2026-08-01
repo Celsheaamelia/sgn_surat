@@ -782,11 +782,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (terpakaiNumbers.includes(nomor)) {
-            nomorUrutHelp.textContent = `Nomor #${pad(nomor)} sudah dipakai (sudah jadi surat).`;
+            nomorUrutHelp.textContent = `Nomor #${pad(nomor)} sudah dipakai.`;
             nomorUrutHelp.style.color = 'var(--danger)';
             if (submitBtn) submitBtn.disabled = true;
         } else if (direservasiNumbers.includes(nomor)) {
-            nomorUrutHelp.textContent = `Nomor #${pad(nomor)} sudah di-keep. Pilih nomor lain.`;
+            nomorUrutHelp.textContent = `Nomor #${pad(nomor)} sudah dicadangkan. Pilih nomor lain.`;
             nomorUrutHelp.style.color = 'var(--danger)';
             if (submitBtn) submitBtn.disabled = true;
         } else {
