@@ -71,16 +71,16 @@
 
                         @if ($kontrak->generated_file_path)
                             <a href="{{ route('kontrak.download', $kontrak) }}" class="btn ledger-btn-brass w-100">
-                                <i class="bi bi-file-earmark-word me-1"></i> Download Dokumen Word
+                                <i class="bi bi-file-earmark-word me-1"></i> Unduh Dokumen Word
                             </a>
                         @else
-                            <p class="ledger-help mb-0">Dokumen belum berhasil digenerate.</p>
+                            <p class="ledger-help mb-0">Dokumen belum berhasil dibuat.</p>
                         @endif
 
                         <form method="POST" action="{{ route('kontrak.regenerate', $kontrak) }}">
                             @csrf
                             <button type="submit" class="btn ledger-btn-ghost w-100">
-                                <i class="bi bi-arrow-repeat me-1"></i> Generate Ulang Dokumen
+                                <i class="bi bi-arrow-repeat me-1"></i> Buat Ulang Dokumen
                             </button>
                         </form>
 

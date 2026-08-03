@@ -13,7 +13,7 @@
             <li>
                 <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="bi bi-grid-1x2"></i>
-                    <span>Dashboard</span>
+                    <span>Halaman Utama</span>
                 </a>
             </li>
 
@@ -75,7 +75,7 @@
                             <a href="{{ route('kontrak.index') }}"
                                class="nav-sublink {{ request()->routeIs('kontrak.index') || request()->routeIs('kontrak.show') || request()->routeIs('kontrak.upload.form') ? 'active' : '' }}">
                                 <i class="bi bi-folder2-open"></i>
-                                <span>Riwayat Kontrak</span>
+                                <span>Daftar Kontrak</span>
                             </a>
                         </li>
                         <li>

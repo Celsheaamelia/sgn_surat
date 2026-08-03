@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 use App\Support\IndonesianDate;
+use App\Support\BagianKontrak;
+use Illuminate\Pagination\LengthAwarePaginator;
+use ZipArchive;
 
 class KontrakController extends Controller
 {
@@ -19,30 +22,71 @@ class KontrakController extends Controller
 
     public function index(Request $request)
     {
-        $kontrakList = Kontrak::with(['karyawan', 'jenisKontrak', 'penandatangan'])
-            ->when($request->search, function ($q) use ($request) {
-                $q->where('nomor_kontrak', 'like', "%{$request->search}%")
-                  ->orWhereHas('karyawan', function ($qq) use ($request) {
-                      $qq->where('nama', 'like', "%{$request->search}%")
-                         ->orWhere('nik', 'like', "%{$request->search}%");
-                  });
-            })
-            ->when($request->jenis, function ($q) use ($request) {
-                $q->where('jenis_kontrak_id', $request->jenis);
-            })
+        $search = trim((string) $request->search);
+        $jenis  = $request->jenis;
+        $bagian = $request->bagian;
 
+        // Ambil semua kontrak (diurutkan tanggal terbaru dulu), lalu dikelompokkan
+        // per karyawan di PHP - supaya karyawan yang punya lebih dari 1 riwayat
+        // kontrak cuma nongol 1 baris (kontrak paling baru), sementara kontrak
+        // lama tetap ada dan bisa dilihat lewat halaman detail (ikon mata).
+        $semuaKontrak = Kontrak::with(['karyawan', 'jenisKontrak', 'penandatangan'])
             ->orderByDesc('tanggal')
             ->orderByDesc('id')
-            ->paginate(10)
-            ->withQueryString();
+            ->get();
 
-        $jenisList = JenisKontrak::orderBy('nama_jenis')->get();
+        $rows = collect();
+
+        foreach ($semuaKontrak->groupBy('karyawan_id') as $riwayatKaryawan) {
+            $terbaru     = $riwayatKaryawan->first();
+            $riwayatLama = $riwayatKaryawan->slice(1)->values();
+
+            // Filter berlaku ke seluruh riwayat karyawan itu (bukan cuma yang
+            // terbaru) - jadi kalau salah satu kontraknya (lama ataupun baru)
+            // cocok dengan pencarian/jenis/bagian, barisnya tetap ditampilkan.
+            $cocokSearch = $search === '' || $riwayatKaryawan->contains(function ($k) use ($search) {
+                return stripos((string) $k->nomor_kontrak, $search) !== false
+                    || stripos((string) optional($k->karyawan)->nama, $search) !== false
+                    || stripos((string) optional($k->karyawan)->nik, $search) !== false;
+            });
+
+            $cocokJenis = !$jenis || $riwayatKaryawan->contains(
+                fn ($k) => (string) $k->jenis_kontrak_id === (string) $jenis
+            );
+
+            $cocokBagian = !$bagian || $riwayatKaryawan->contains(
+                fn ($k) => strtolower(trim((string) $k->bagian_kontrak)) === strtolower(trim($bagian))
+            );
+
+            if ($cocokSearch && $cocokJenis && $cocokBagian) {
+                $rows->push([
+                    'kontrak'        => $terbaru,
+                    'riwayat_lama'   => $riwayatLama,
+                    'total_riwayat'  => $riwayatKaryawan->count(),
+                ]);
+            }
+        }
+
+        $rows = $rows->sortByDesc(fn ($r) => optional($r['kontrak']->tanggal)->timestamp)->values();
+
+        $perPage    = 10;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $kontrakList = new LengthAwarePaginator(
+            $rows->forPage($currentPage, $perPage),
+            $rows->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $jenisList  = JenisKontrak::orderBy('nama_jenis')->get();
+        $bagianList = BagianKontrak::OPTIONS;
 
         if ($request->ajax()) {
             return view('kontrak.partials.results', compact('kontrakList'))->render();
         }
 
-        return view('kontrak.index', compact('kontrakList', 'jenisList'));
+        return view('kontrak.index', compact('kontrakList', 'jenisList', 'bagianList'));
     }
 
     public function create()
@@ -131,7 +175,7 @@ class KontrakController extends Controller
         } catch (\Throwable $e) {
             report($e);
             return redirect()->route('kontrak.index')
-                ->with('success', 'Kontrak tersimpan, tapi dokumen Word gagal digenerate otomatis: ' . $e->getMessage());
+                ->with('success', 'Kontrak tersimpan, tapi dokumen Word gagal dibuat otomatis: ' . $e->getMessage());
         }
 
         return redirect()->route('kontrak.index')
@@ -239,7 +283,16 @@ class KontrakController extends Controller
     {
         $kontrak->load(['karyawan', 'jenisKontrak', 'penandatangan', 'user']);
 
-        return view('kontrak.show', compact('kontrak'));
+        // Semua kontrak lain milik karyawan yang sama (riwayat lama & baru),
+        // biar dari 1 halaman detail bisa keliatan semua kontrak dia.
+        $riwayatLain = Kontrak::with(['jenisKontrak'])
+            ->where('karyawan_id', $kontrak->karyawan_id)
+            ->where('id', '!=', $kontrak->id)
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('kontrak.show', compact('kontrak', 'riwayatLain'));
     }
 
     public function download(Kontrak $kontrak)
@@ -253,17 +306,32 @@ class KontrakController extends Controller
         return Storage::download($kontrak->generated_file_path, $filename);
     }
 
-    public function regenerate(Kontrak $kontrak, DocxTemplateService $docxService)
+    public function regenerate(Request $request, Kontrak $kontrak, DocxTemplateService $docxService)
     {
         try {
             $generatedPath = $this->generateDocument($kontrak, $docxService);
             $kontrak->update(['generated_file_path' => $generatedPath]);
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Gagal generate ulang dokumen: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal membuat ulang dokumen: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', 'Gagal membuat ulang dokumen: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Dokumen kontrak berhasil digenerate ulang.');
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Dokumen kontrak berhasil dibuat ulang.',
+            ]);
+        }
+
+        return back()->with('success', 'Dokumen kontrak berhasil dibuat ulang.');
     }
 
     public function uploadSignedForm(Kontrak $kontrak)
@@ -289,7 +357,7 @@ class KontrakController extends Controller
         ]);
 
         return redirect()->route('kontrak.upload.form', $kontrak->id)
-            ->with('success', 'Kontrak yang sudah ditandatangani berhasil diupload.');
+            ->with('success', 'Kontrak yang sudah ditandatangani berhasil diunggah.');
     }
 
     public function deleteSigned(Kontrak $kontrak)
@@ -321,6 +389,218 @@ class KontrakController extends Controller
         $kontrak->delete();
 
         return redirect()->route('kontrak.index')->with('success', 'Kontrak berhasil dihapus.');
+    }
+
+    /**
+     * Cek status pembuatan dokumen untuk satu bagian/departemen - dipakai
+     * frontend buat nampilin/nyembunyiin tombol "Buat Semua Dokumen" secara
+     * otomatis pas dropdown Bagian diganti.
+     */
+    public function cekStatusBagian(Request $request)
+    {
+        $request->validate([
+            'bagian' => 'required|string|in:' . implode(',', BagianKontrak::OPTIONS),
+        ]);
+
+        $bagianDicari = strtolower(trim($request->bagian));
+
+        $semuaDiBagian = Kontrak::whereRaw('LOWER(TRIM(bagian_kontrak)) = ?', [$bagianDicari])->get();
+
+        $belumGenerate = $semuaDiBagian->filter(function ($k) {
+            return !$k->generated_file_path || !Storage::exists($k->generated_file_path);
+        })->count();
+
+        return response()->json([
+            'total'          => $semuaDiBagian->count(),
+            'belum_generate' => $belumGenerate,
+            'sudah_generate' => $semuaDiBagian->count() - $belumGenerate,
+        ]);
+    }
+
+    /**
+     * Buat ulang/buat dokumen docx untuk semua kontrak di satu
+     * bagian/departemen yang belum punya dokumen (atau file-nya hilang) -
+     * dipanggil dari tombol "Buat Semua Dokumen" di Daftar Kontrak, biar
+     * abis ini pengguna bisa langsung pakai "Unduh per Bagian" tanpa
+     * harus membuat dokumennya satu-satu lewat halaman detail.
+     */
+    public function generateByBagian(Request $request, DocxTemplateService $docxService)
+    {
+        $request->validate([
+            'bagian' => 'required|string|in:' . implode(',', BagianKontrak::OPTIONS),
+        ]);
+
+        $bagianDicari = strtolower(trim($request->bagian));
+
+        $perluDigenerate = Kontrak::with(['karyawan', 'jenisKontrak', 'penandatangan'])
+            ->whereRaw('LOWER(TRIM(bagian_kontrak)) = ?', [$bagianDicari])
+            ->get()
+            ->filter(function ($k) {
+                return !$k->generated_file_path || !Storage::exists($k->generated_file_path);
+            });
+
+        if ($perluDigenerate->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'berhasil' => 0,
+                'gagal' => 0,
+                'message' => 'Semua kontrak di bagian "' . $request->bagian . '" sudah punya dokumen.',
+            ]);
+        }
+
+        $berhasil = 0;
+        $gagalDetail = [];
+
+        foreach ($perluDigenerate as $kontrak) {
+            try {
+                $generatedPath = $this->generateDocument($kontrak, $docxService);
+                $kontrak->update(['generated_file_path' => $generatedPath]);
+                $berhasil++;
+            } catch (\Throwable $e) {
+                report($e);
+                $gagalDetail[] = $kontrak->nomor_kontrak;
+            }
+        }
+
+        $gagal = count($gagalDetail);
+
+        if ($berhasil === 0) {
+            return response()->json([
+                'success' => false,
+                'berhasil' => 0,
+                'gagal' => $gagal,
+                'message' => 'Gagal membuat dokumen untuk semua (' . $gagal . ') kontrak di bagian ini. ' .
+                    'Coba buat ulang manual lewat halaman detail kontrak.',
+            ], 422);
+        }
+
+        $pesan = $berhasil . ' dokumen kontrak berhasil dibuat.';
+        if ($gagal > 0) {
+            $pesan .= ' ' . $gagal . ' kontrak gagal dibuat (' . implode(', ', $gagalDetail) . ') - cek detail kontraknya satu-satu.';
+        }
+
+        return response()->json([
+            'success' => true,
+            'berhasil' => $berhasil,
+            'gagal' => $gagal,
+            'message' => $pesan,
+        ]);
+    }
+
+    /**
+     * Unduh semua dokumen kontrak (docx) milik satu bagian/departemen
+     * sekaligus, dibungkus jadi 1 file ZIP.
+     */
+    public function downloadByBagian(Request $request)
+    {
+        $request->validate([
+            'bagian' => 'required|string|in:' . implode(',', BagianKontrak::OPTIONS),
+        ]);
+
+        // Pakai LOWER(TRIM(...)) biar cocok juga sama data lama yang mungkin
+        // ada spasi nyasar / beda huruf besar-kecil (dulu field ini teks bebas).
+        $bagianDicari = strtolower(trim($request->bagian));
+
+        $semuaDiBagian = Kontrak::with('karyawan')
+            ->whereRaw('LOWER(TRIM(bagian_kontrak)) = ?', [$bagianDicari])
+            ->orderByDesc('tanggal')
+            ->get();
+
+        if ($semuaDiBagian->isEmpty()) {
+            $pesan = 'Belum ada kontrak dengan bagian "' . $request->bagian . '". ' .
+                'Cek lagi field Bagian/Departemen di data kontraknya - kalau kontrak dibuat sebelum ' .
+                'dropdown bagian ini ada, isiannya bisa jadi teks bebas yang beda dari daftar sekarang.';
+
+            return $request->ajax()
+                ? response()->json(['success' => false, 'message' => $pesan], 422)
+                : back()->with('error', $pesan);
+        }
+
+        $kontrakList = $semuaDiBagian->filter(fn ($k) => !empty($k->generated_file_path))->values();
+
+        if ($kontrakList->isEmpty()) {
+            $pesan = 'Ada ' . $semuaDiBagian->count() . ' kontrak untuk bagian "' . $request->bagian . '", ' .
+                'tapi dokumen Word-nya belum dibuat. Buka detail kontraknya lalu klik "Buat Ulang Dokumen".';
+
+            return $request->ajax()
+                ? response()->json(['success' => false, 'message' => $pesan], 422)
+                : back()->with('error', $pesan);
+        }
+
+        $zipName = 'Daftar Kontrak - ' . $request->bagian . '.zip';
+
+        return $this->buildZipResponse($kontrakList, $zipName, $request);
+    }
+
+    /**
+     * Unduh beberapa kontrak terpilih (lewat checkbox di halaman Riwayat
+     * Kontrak) sekaligus, dibungkus jadi 1 file ZIP.
+     */
+    public function downloadSelected(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:kontraks,id',
+        ]);
+
+        $kontrakList = Kontrak::with('karyawan')
+            ->whereIn('id', $request->ids)
+            ->whereNotNull('generated_file_path')
+            ->orderByDesc('tanggal')
+            ->get();
+
+        if ($kontrakList->isEmpty()) {
+            $pesan = 'Dokumen kontrak yang dipilih belum tersedia untuk diunduh.';
+
+            return $request->ajax()
+                ? response()->json(['success' => false, 'message' => $pesan], 422)
+                : back()->with('error', $pesan);
+        }
+
+        return $this->buildZipResponse($kontrakList, 'Daftar Kontrak Terpilih.zip', $request);
+    }
+
+    /**
+     * Bikin file ZIP sementara dari kumpulan kontrak, lalu kirim sebagai
+     * download dan hapus file zip-nya setelah terkirim.
+     */
+    private function buildZipResponse($kontrakList, string $zipName, ?Request $request = null)
+    {
+        $tempPath = storage_path('app/tmp-' . uniqid('kontrak-zip-') . '.zip');
+
+        $zip = new ZipArchive();
+        if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            $pesan = 'Gagal membuat file ZIP.';
+
+            return ($request && $request->ajax())
+                ? response()->json(['success' => false, 'message' => $pesan], 500)
+                : back()->with('error', $pesan);
+        }
+
+        $usedNames = [];
+
+        foreach ($kontrakList as $kontrak) {
+            if (!$kontrak->generated_file_path || !Storage::exists($kontrak->generated_file_path)) {
+                continue;
+            }
+
+            $baseName = str_replace(['/', '\\'], '-', $kontrak->nomor_kontrak) . '.docx';
+
+            // Hindari nama file dobel di dalam zip kalau ada nomor_kontrak yang sama.
+            $entryName = $baseName;
+            $suffix = 1;
+            while (in_array($entryName, $usedNames, true)) {
+                $entryName = str_replace('.docx', "-{$suffix}.docx", $baseName);
+                $suffix++;
+            }
+            $usedNames[] = $entryName;
+
+            $zip->addFile(Storage::path($kontrak->generated_file_path), $entryName);
+        }
+
+        $zip->close();
+
+        return response()->download($tempPath, $zipName)->deleteFileAfterSend(true);
     }
 
     public function getNextSequence(Request $request)

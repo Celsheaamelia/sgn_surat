@@ -111,6 +111,62 @@
                         </dl>
                     </div>
                 </div>
+
+                @if ($riwayatLain->isNotEmpty())
+                    <div class="card ledger-card mt-4">
+                        <div class="card-header ledger-card-header">
+                            <h3 class="ledger-table-title mb-0">
+                                <i class="bi bi-clock-history me-1"></i>
+                                Riwayat Kontrak Lain ({{ $kontrak->karyawan->nama }})
+                            </h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table ledger-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Nomor Kontrak</th>
+                                        <th>Jenis</th>
+                                        <th>Bagian</th>
+                                        <th>Periode</th>
+                                        <th class="text-end"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($riwayatLain as $lama)
+                                        <tr>
+                                            <td class="ledger-nomor">{{ $lama->nomor_kontrak }}</td>
+                                            <td>{{ $lama->jenisKontrak->nama_jenis ?? '-' }}</td>
+                                            <td>{{ $lama->bagian_kontrak ?: '-' }}</td>
+                                            <td class="ledger-tanggal">
+                                                {{ optional($lama->tanggal_mulai)->format('d/m/Y') }}
+                                                &ndash;
+                                                @if ($lama->tanggal_selesai)
+                                                    {{ $lama->tanggal_selesai->format('d/m/Y') }}
+                                                @elseif (optional($lama->jenisKontrak)->masa_giling)
+                                                    Berakhirnya Masa Giling
+                                                @else
+                                                    Tetap
+                                                @endif
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-flex gap-2 justify-content-end">
+                                                    @if ($lama->generated_file_path)
+                                                        <a href="{{ route('kontrak.download', $lama) }}" class="btn ledger-btn-detail" title="Download dokumen Word">
+                                                            <i class="bi bi-file-earmark-word"></i>
+                                                        </a>
+                                                    @endif
+                                                    <a href="{{ route('kontrak.show', $lama) }}" class="btn ledger-btn-detail" title="Detail">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="col-lg-4">
@@ -120,16 +176,18 @@
 
                         @if ($kontrak->generated_file_path)
                             <a href="{{ route('kontrak.download', $kontrak) }}" class="btn ledger-btn-brass w-100">
-                                <i class="bi bi-file-earmark-word me-1"></i> Download Dokumen Word
+                                <i class="bi bi-file-earmark-word me-1"></i> Unduh Dokumen Word
                             </a>
                         @else
-                            <p class="ledger-help mb-0">Dokumen belum berhasil digenerate.</p>
+                            <p class="ledger-help mb-0">Dokumen belum berhasil dibuat.</p>
                         @endif
 
-                        <form method="POST" action="{{ route('kontrak.regenerate', $kontrak) }}">
+                        <form method="POST" action="{{ route('kontrak.regenerate', $kontrak) }}" id="regenerateForm">
                             @csrf
-                            <button type="submit" class="btn ledger-btn-ghost w-100">
-                                <i class="bi bi-arrow-repeat me-1"></i> Generate Ulang Dokumen
+                            <button type="submit" class="btn ledger-btn-ghost w-100 d-flex align-items-center justify-content-center gap-2" id="regenerateBtn">
+                                <i class="bi bi-arrow-repeat me-1"></i>
+                                <span>Buat Ulang Dokumen</span>
+                                <span id="regenerateStatus" class="ledger-inline-status"></span>
                             </button>
                         </form>
 
@@ -143,5 +201,49 @@
 
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const form = document.getElementById('regenerateForm');
+    const btn = document.getElementById('regenerateBtn');
+    const status = document.getElementById('regenerateStatus');
+
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        btn.disabled = true;
+        status.innerHTML = '<span class="ledger-spinner"></span> Membuat dokumen...';
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            body: new FormData(form),
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (ok && data.success) {
+                status.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Selesai';
+                setTimeout(() => window.location.reload(), 900);
+            } else {
+                status.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> Gagal';
+                btn.disabled = false;
+                setTimeout(() => { status.innerHTML = ''; }, 3000);
+            }
+        })
+        .catch(() => {
+            status.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> Gagal';
+            btn.disabled = false;
+        });
+    });
+})();
+</script>
+@endpush
 
 @endsection
