@@ -27,9 +27,17 @@
             {{-- FORM --}}
             <div class="col-lg-8">
                 <div class="card ledger-card h-100">
-                    <div class="card-header ledger-card-header">
-                        <h2 class="ledger-title">Buat Kontrak Karyawan</h2>
-                        {{-- <p class="ledger-subtitle mb-0">Cari karyawan dari database, data diri otomatis terisi ke dokumen.</p> --}}
+                    <div class="card-header ledger-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h2 class="ledger-title mb-0">Buat Kontrak Karyawan</h2>
+                            {{-- <p class="ledger-subtitle mb-0">Cari karyawan dari database, data diri otomatis terisi ke dokumen.</p> --}}
+                        </div>
+                        {{-- Tombol Kelola Template --}}
+                        <a href="{{ Route::has('kontrak-template.index') ? route('kontrak-template.index') : url('/kontrak-template') }}"
+                           class="btn btn-sm ledger-btn-ghost">
+                            <i class="bi bi-file-earmark-text me-1"></i>
+                            Kelola Template
+                        </a>
                     </div>
 
                     <div class="card-body">
@@ -43,9 +51,9 @@
                                        placeholder="Ketik NIK atau nama karyawan..." autocomplete="off">
                                 <div class="karyawan-search-results" id="karyawanResults"></div>
                                 <input type="hidden" name="karyawan_id" id="karyawan_id" value="{{ old('karyawan_id') }}" required>
-                                <div class="ledger-help">
+                                {{-- <div class="ledger-help">
                                     Belum ada di database? <a href="{{ route('karyawan.create') }}" target="_blank">Tambah data karyawan baru</a>.
-                                </div>
+                                </div> --}}
                             </div>
 
                             {{-- Kartu data karyawan terpilih (autofill) --}}
@@ -64,20 +72,27 @@
                             <div class="row g-3 mb-1">
                                 <div class="col-md-6">
                                     <label for="jenis_kontrak_id" class="form-label">Jenis Kontrak <span class="ledger-required">*</span></label>
-                                    <select name="jenis_kontrak_id" id="jenis_kontrak_id" required class="form-select">
-                                        <option value="">Pilih Jenis Kontrak</option>
-                                        @foreach ($jenisList as $jenis)
-                                            <option value="{{ $jenis->id }}"
-                                                    data-kode="{{ $jenis->kode }}"
-                                                    data-kode-nomor="{{ $jenis->kode_nomor ?? $jenis->kode }}"
-                                                    data-label="{{ $jenis->nama_singkat ?: $jenis->nama_jenis }}"
-                                                    data-masa="{{ $jenis->masa_berlaku_bulan }}"
-                                                    data-masa-giling="{{ $jenis->masa_giling ? '1' : '0' }}"
-                                                    @selected(old('jenis_kontrak_id') == $jenis->id)>
-                                                {{ $jenis->kode_nomor ?? $jenis->kode }} — {{ $jenis->nama_singkat ?: $jenis->nama_jenis }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <div class="d-flex gap-2 align-items-start">
+                                        <select name="jenis_kontrak_id" id="jenis_kontrak_id" required class="form-select">
+                                            <option value="">Pilih Jenis Kontrak</option>
+                                            @foreach ($jenisList as $jenis)
+                                                <option value="{{ $jenis->id }}"
+                                                        data-kode="{{ $jenis->kode }}"
+                                                        data-kode-nomor="{{ $jenis->kode_nomor ?? $jenis->kode }}"
+                                                        data-label="{{ $jenis->nama_singkat ?: $jenis->nama_jenis }}"
+                                                        data-masa="{{ $jenis->masa_berlaku_bulan }}"
+                                                        data-masa-giling="{{ $jenis->masa_giling ? '1' : '0' }}"
+                                                        @selected(old('jenis_kontrak_id') == $jenis->id)>
+                                                    {{ $jenis->kode_nomor ?? $jenis->kode }} — {{ $jenis->nama_singkat ?: $jenis->nama_jenis }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        {{-- Tombol Preview Template --}}
+                                        <button type="button" id="previewTemplateBtn" class="btn ledger-btn-ghost flex-shrink-0" disabled title="Pilih jenis kontrak dulu">
+                                            <i class="bi bi-eye me-1"></i>
+                                            Preview
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="nomorUrut" class="form-label">Nomor Urut <span class="ledger-required">*</span></label>
@@ -115,7 +130,7 @@
                                 <input type="date" name="tanggal_selesai" id="tanggal_selesai"
                                        value="{{ old('tanggal_selesai') }}" class="form-control">
                                 <div class="ledger-help d-none" id="masaGilingNote">
-                                    Otomatis: <strong>sampai dengan ditetapkan tanggal berakhirnya Masa Giling</strong> — tidak perlu diisi tanggal tetap.
+                                    Otomatis: <strong>sampai dengan ditetapkan tanggal berakhirnya Masa Giling</strong>
                                 </div>
                             </div>
 
@@ -305,6 +320,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const previewTanggal = document.getElementById('previewTanggal');
     const submitBtn = document.querySelector('#kontrakForm button[type="submit"]');
 
+    // ------- Tombol Preview Template -------
+    const previewTemplateBtn = document.getElementById('previewTemplateBtn');
+    // NOTE: sesuaikan URL ini kalau route preview template kamu berbeda.
+    // Asumsi endpoint: GET /kontrak-template/preview/{jenis_kontrak_id}
+    function updatePreviewTemplateBtn() {
+        if (jenisEl.value) {
+            previewTemplateBtn.disabled = false;
+            previewTemplateBtn.title = 'Lihat preview template untuk jenis kontrak ini';
+        } else {
+            previewTemplateBtn.disabled = true;
+            previewTemplateBtn.title = 'Pilih jenis kontrak dulu';
+        }
+    }
+    previewTemplateBtn.addEventListener('click', function () {
+        if (!jenisEl.value) return;
+        const url = `{{ url('/kontrak-template/preview') }}/${jenisEl.value}`;
+        window.open(url, '_blank');
+    });
+
     let seqText = "{{ str_pad($nextSequence,3,'0',STR_PAD_LEFT) }}";
     let terpakaiNumbers = [];
     let direservasiNumbers = [];
@@ -354,6 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
     jenisEl.addEventListener('change', function () {
         toggleTanggalSelesai();
         updatePreview();
+        updatePreviewTemplateBtn();
     });
 
     async function loadUsedNumbers(){
@@ -446,6 +481,7 @@ document.addEventListener('DOMContentLoaded', function () {
         toggleTanggalSelesai();
         await loadUsedNumbers();
         checkNomorStatus();
+        updatePreviewTemplateBtn();
     })();
 });
 </script>

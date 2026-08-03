@@ -22,9 +22,14 @@
                 <h2 class="ledger-title mb-1">Riwayat Kontrak</h2>
                 {{-- <p class="ledger-subtitle mb-0">Semua kontrak karyawan yang pernah dibuat lewat sistem.</p> --}}
             </div>
-            <a href="{{ route('kontrak.create') }}" class="btn ledger-btn-brass">
-                <i class="bi bi-file-earmark-plus me-1"></i> Buat Kontrak
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('kontrak-template.index') }}" class="btn ledger-btn-ghost">
+                    <i class="bi bi-file-earmark-text me-1"></i> Kelola Template
+                </a>
+                <a href="{{ route('kontrak.create') }}" class="btn ledger-btn-brass">
+                    <i class="bi bi-file-earmark-plus me-1"></i> Buat Kontrak
+                </a>
+            </div>
         </div>
 
         <div class="ledger-toolbar row g-2 mb-3">

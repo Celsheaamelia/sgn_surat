@@ -6,32 +6,6 @@ use ZipArchive;
 use DOMDocument;
 use RuntimeException;
 
-/**
- * Service sederhana untuk mengisi template Word (.docx) secara otomatis
- * tanpa dependency eksternal (cukup ext-zip & ext-dom bawaan PHP).
- *
- * Cara pakai template:
- *   Tulis placeholder di file Word dengan format {{NAMA_PLACEHOLDER}},
- *   contoh: {{NAMA_KARYAWAN}}, {{NOMOR_KONTRAK}}, {{TANGGAL_MULAI}}.
- *
- * Kenapa robust terhadap placeholder yang "kepotong"?
- *   Microsoft Word sering memecah satu kalimat jadi beberapa <w:r> (run)
- *   secara internal, walau tampilannya di layar terlihat menyatu. Kalau
- *   placeholder kena potong di tengah, replace text biasa akan gagal.
- *   Service ini menggabungkan semua run dalam satu paragraf jadi satu teks
- *   dulu sebelum mencari & mengganti placeholder, baru ditulis ulang.
- *
- * Kenapa tab (<w:tab/>) ditangani khusus?
- *   Tab di Word BUKAN karakter '\t' di dalam <w:t>, tapi elemen XML
- *   terpisah <w:tab/> yang berdiri sendiri di antara run. Kalau cuma
- *   menggabung <w:t> tanpa memperhitungkan <w:tab/>, tab-nya hilang dari
- *   teks gabungan dan alignment kolom (mis. "Nama :  Budi") jadi berantakan
- *   begitu paragraf ditulis ulang. Di sini <w:tab/> direpresentasikan
- *   sebagai karakter "\t" waktu digabung, dan saat ditulis ulang, paragraf
- *   dibongkar total lalu dibangun ulang: teks dipecah per "\t", diselingi
- *   elemen <w:tab/> ASLI lagi (bukan karakter tab biasa) supaya Word tetap
- *   mengenalinya sebagai tab kolom.
- */
 class DocxTemplateService
 {
     private const NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -79,6 +53,154 @@ class DocxTemplateService
         $zip->close();
 
         return $outputPath;
+    }
+
+    /**
+     * Tulis placeholder {{FIELD}} ke posisi yang sudah dikonfirmasi admin
+     * lewat halaman "Petakan Field" (lihat TemplateFieldDetector). Dipakai
+     * sekali saja pas nyiapin template baru, BUKAN dipanggil pas generate
+     * kontrak per karyawan (itu tetap pakai generate() di atas).
+     *
+     * @param  string $templatePath  Path absolut file .docx sumber (draft admin)
+     * @param  string $outputPath    Path absolut tujuan (boleh sama dengan
+     *                                $templatePath untuk menimpa file yang sama)
+     * @param  array<int, array<int, array{offset:int, matched_text:string, field:string}>> $mapping
+     *                                key luar = index paragraf (dari TemplateFieldDetector),
+     *                                tiap paragraf berisi daftar titik-titik yang
+     *                                dikonfirmasi + field yang dipilih admin.
+     * @return string  Path file hasil
+     */
+    public function applyFieldMapping(string $templatePath, string $outputPath, array $mapping): string
+    {
+        if (!file_exists($templatePath)) {
+            throw new RuntimeException("Template tidak ditemukan: {$templatePath}");
+        }
+
+        if (empty($mapping)) {
+            throw new RuntimeException('Tidak ada field yang dikonfirmasi untuk dipetakan.');
+        }
+
+        // Kalau tujuan sama dengan sumber (menimpa file yang sama), proses
+        // lewat file sementara dulu - copy() dari file ke dirinya sendiri
+        // sambil ZipArchive dibuka bisa merusak filenya.
+        $isSameFile = realpath($templatePath) !== false
+            && realpath($templatePath) === realpath($outputPath);
+        $workingPath = $isSameFile ? $outputPath . '.tmp' : $outputPath;
+
+        if (!is_dir(dirname($workingPath))) {
+            mkdir(dirname($workingPath), 0775, true);
+        }
+
+        if (!copy($templatePath, $workingPath)) {
+            throw new RuntimeException("Gagal menyalin template ke: {$workingPath}");
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($workingPath) !== true) {
+            throw new RuntimeException("Gagal membuka file docx: {$workingPath}");
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml === false) {
+            $zip->close();
+            throw new RuntimeException('word/document.xml tidak ditemukan di dalam file.');
+        }
+
+        $dom = new DOMDocument();
+        $dom->preserveWhiteSpace = true;
+        $prevErrors = libxml_use_internal_errors(true);
+        $loaded = $dom->loadXML($xml);
+        libxml_use_internal_errors($prevErrors);
+
+        if (!$loaded) {
+            $zip->close();
+            throw new RuntimeException('Gagal membaca XML dokumen (file mungkin korup).');
+        }
+
+        $paragraphs = iterator_to_array($dom->getElementsByTagNameNS(self::NS, 'p'));
+
+        foreach ($mapping as $pIndex => $replacements) {
+            if (!isset($paragraphs[$pIndex]) || empty($replacements)) {
+                continue;
+            }
+
+            $paragraph = $paragraphs[$pIndex];
+            $text = TemplateFieldDetector::mergedPlainText($paragraph);
+
+            // Urutkan dari offset TERBESAR dulu, supaya splice dari
+            // belakang - offset yang lebih awal tidak ikut bergeser waktu
+            // panjang teks berubah karena penggantian.
+            usort($replacements, fn ($a, $b) => $b['offset'] <=> $a['offset']);
+
+            foreach ($replacements as $r) {
+                $start  = $r['offset'];
+                $length = mb_strlen($r['matched_text']);
+
+                $text = mb_substr($text, 0, $start)
+                    . '{{' . $r['field'] . '}}'
+                    . mb_substr($text, $start + $length);
+            }
+
+            $this->rebuildParagraphFromText($paragraph, $text);
+        }
+
+        $zip->addFromString('word/document.xml', $dom->saveXML());
+        $zip->close();
+
+        if ($isSameFile) {
+            if (!rename($workingPath, $outputPath)) {
+                throw new RuntimeException("Gagal menyimpan hasil ke: {$outputPath}");
+            }
+        }
+
+        return $outputPath;
+    }
+
+    /**
+     * @param  string $docxPath  Path absolut ke file .docx sumber
+     * @param  string|null $outputDir  Folder tujuan PDF (default: folder yang sama dengan docx)
+     * @return string  Path absolut file .pdf hasil konversi
+     */
+    public function convertToPdf(string $docxPath, ?string $outputDir = null): string
+    {
+        if (!file_exists($docxPath)) {
+            throw new RuntimeException("File docx tidak ditemukan: {$docxPath}");
+        }
+
+        $outputDir = $outputDir ?: dirname($docxPath);
+        $pdfPath = rtrim($outputDir, '/') . '/' . pathinfo($docxPath, PATHINFO_FILENAME) . '.pdf';
+
+        // Kalau pdf sudah ada dan lebih baru dari docx-nya, tidak perlu convert ulang.
+        if (file_exists($pdfPath) && filemtime($pdfPath) >= filemtime($docxPath)) {
+            return $pdfPath;
+        }
+
+        if (!is_dir($outputDir)) {
+            mkdir($outputDir, 0775, true);
+        }
+
+        $userProfileDir = sys_get_temp_dir() . '/soffice-profile-' . uniqid();
+
+        $cmd = sprintf(
+            'soffice --headless --norestore -env:UserInstallation=file://%s --convert-to pdf --outdir %s %s 2>&1',
+            escapeshellarg($userProfileDir),
+            escapeshellarg($outputDir),
+            escapeshellarg($docxPath)
+        );
+
+        exec($cmd, $output, $exitCode);
+
+        // Bersihkan profile sementara, tidak dibutuhkan lagi setelah convert selesai.
+        exec('rm -rf ' . escapeshellarg($userProfileDir));
+
+        if ($exitCode !== 0 || !file_exists($pdfPath)) {
+            throw new RuntimeException(
+                'Gagal convert docx ke PDF. Pastikan LibreOffice (soffice) terinstall di server. Output: '
+                . implode("\n", $output)
+            );
+        }
+
+        return $pdfPath;
     }
 
     /**
@@ -150,12 +272,26 @@ class DocxTemplateService
             return;
         }
 
-        $runList = iterator_to_array($runs);
-
         // Gabungkan teks paragraf, TERMASUK tab (<w:tab/> -> "\t") dan baris
         // baru (<w:br/> -> "\n"), supaya alignment tidak hilang waktu digabung.
+        $fullText = $this->mergedTextWithTabsAndBreaks($paragraph);
+
+        if (strpos($fullText, '{{') === false) {
+            return; // tidak ada placeholder di paragraf ini, biarkan apa adanya
+        }
+
+        $replaced = preg_replace_callback('/\{\{\s*([A-Z0-9_]+)\s*\}\}/', function ($m) use ($data) {
+            $key = $m[1];
+            return array_key_exists($key, $data) ? (string) $data[$key] : $m[0];
+        }, $fullText);
+
+        $this->rebuildParagraphFromText($paragraph, $replaced);
+    }
+
+    private function mergedTextWithTabsAndBreaks($paragraph): string
+    {
         $fullText = '';
-        foreach ($runList as $run) {
+        foreach ($paragraph->getElementsByTagNameNS(self::NS, 'r') as $run) {
             foreach ($run->childNodes as $child) {
                 if ($child->nodeType !== XML_ELEMENT_NODE) {
                     continue;
@@ -170,19 +306,25 @@ class DocxTemplateService
             }
         }
 
-        if (strpos($fullText, '{{') === false) {
-            return; // tidak ada placeholder di paragraf ini, biarkan apa adanya
+        return $fullText;
+    }
+
+    /**
+     * Hapus semua run yang ada di paragraf, lalu bangun ulang dari teks
+     * final yang sudah diproses (baik dari replace placeholder biasa maupun
+     * dari applyFieldMapping). Format (bold, dsb) diambil dari run pertama
+     * yang punya rPr supaya konsisten; highlight (kuning, dsb) SENGAJA
+     * dibuang - itu cuma penanda "isi di sini" di draft, bukan bagian dari
+     * dokumen final.
+     */
+    private function rebuildParagraphFromText($paragraph, string $finalText): void
+    {
+        $runList = iterator_to_array($paragraph->getElementsByTagNameNS(self::NS, 'r'));
+
+        if ($runList === []) {
+            return;
         }
 
-        $replaced = preg_replace_callback('/\{\{\s*([A-Z0-9_]+)\s*\}\}/', function ($m) use ($data) {
-            $key = $m[1];
-            return array_key_exists($key, $data) ? (string) $data[$key] : $m[0];
-        }, $fullText);
-
-        // Ambil format (rPr) dari run pertama yang punya rPr, supaya font/bold
-        // dsb tetap konsisten di run-run baru. Highlight (kuning, dsb) SENGAJA
-        // dibuang dari format yang dipakai ulang - itu cuma penanda "isi di sini"
-        // di draft, bukan bagian dari dokumen final.
         $templateRPr = null;
         foreach ($runList as $run) {
             foreach ($run->childNodes as $child) {
@@ -207,7 +349,7 @@ class DocxTemplateService
 
         // Bangun ulang: pecah per baris ("\n") lalu per kolom ("\t"), selingi
         // run teks baru dengan elemen <w:tab/> / <w:br/> ASLI Word.
-        $lines = explode("\n", $replaced);
+        $lines = explode("\n", $finalText);
 
         foreach ($lines as $lineIndex => $line) {
             if ($lineIndex > 0) {
