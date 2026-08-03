@@ -145,6 +145,10 @@ function simpanSurat(array $data): void
     Route::post('/kontrak', [KontrakController::class, 'store'])->name('kontrak.store');
     Route::get('/kontrak/next-sequence', [KontrakController::class, 'getNextSequence'])->name('kontrak.next-sequence');
     Route::get('/kontrak/cek-status-nomor', [KontrakController::class, 'cekStatusNomor'])->name('kontrak.cek-status-nomor');
+    Route::get('/kontrak/cek-status-bagian', [KontrakController::class, 'cekStatusBagian'])->name('kontrak.cek-status-bagian');
+    Route::post('/kontrak/generate-bagian', [KontrakController::class, 'generateByBagian'])->name('kontrak.generate-bagian');
+    Route::get('/kontrak/download-bagian', [KontrakController::class, 'downloadByBagian'])->name('kontrak.download-bagian');
+    Route::post('/kontrak/download-terpilih', [KontrakController::class, 'downloadSelected'])->name('kontrak.download-selected');
     Route::get('/kontrak/{kontrak}', [KontrakController::class, 'show'])->name('kontrak.show');
     Route::get('/kontrak/{kontrak}/download', [KontrakController::class, 'download'])->name('kontrak.download');
     Route::post('/kontrak/{kontrak}/regenerate', [KontrakController::class, 'regenerate'])->name('kontrak.regenerate');

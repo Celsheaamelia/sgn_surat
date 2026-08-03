@@ -142,8 +142,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="bagian_kontrak" class="form-label">Bagian / Departemen (di kontrak ini)</label>
-                                    <input type="text" name="bagian_kontrak" id="bagian_kontrak"
-                                           value="{{ old('bagian_kontrak') }}" class="form-control" placeholder="cth: Instalasi">
+                                    <select name="bagian_kontrak" id="bagian_kontrak" class="form-select">
+                                        <option value="">-- Pilih Bagian --</option>
+                                        @foreach (\App\Support\BagianKontrak::OPTIONS as $bagianOpt)
+                                            <option value="{{ $bagianOpt }}" @selected(old('bagian_kontrak') == $bagianOpt)>{{ $bagianOpt }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -158,7 +162,7 @@
                                 <button type="reset" class="btn ledger-btn-ghost" id="resetBtn">Reset</button>
                                 <button type="submit" class="btn ledger-btn-brass">
                                     <i class="bi bi-file-earmark-word me-1"></i>
-                                    Simpan &amp; Generate Dokumen
+                                    Simpan &amp; Buat Dokumen
                                 </button>
                             </div>
                         </form>
@@ -204,7 +208,7 @@
                         <h3 class="ledger-status-title mb-3">Status Sistem</h3>
                         <div class="d-flex align-items-center gap-2 ledger-status-line">
                             <span class="ledger-status-dot"></span>
-                            Siap generate nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }}
+                            Nomor #{{ str_pad($nextSequence, 3, '0', STR_PAD_LEFT) }} siap dipakai
                         </div>
                     </div>
                 </div>
@@ -503,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pt-0 pb-4">
-                    <a href="{{ route('kontrak.index') }}" class="btn ledger-btn-brass">Lihat Riwayat Kontrak</a>
+                    <a href="{{ route('kontrak.index') }}" class="btn ledger-btn-brass">Lihat Daftar Kontrak</a>
                 </div>
             </div>
         </div>

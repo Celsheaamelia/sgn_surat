@@ -316,7 +316,7 @@
 
     <!-- Header -->
     <div class="page-head mb-4">
-        <h3>Dashboard</h3>
+        <h3>Halaman Utama</h3>
     </div>
 
     <div class="dash-section">

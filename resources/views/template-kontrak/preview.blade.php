@@ -17,10 +17,10 @@
             </a>
         </div>
 
-        <div class="alert alert-info">
+        {{-- <div class="alert alert-info">
             Ini isi template mentah - bagian <code>@{{PLACEHOLDER}}</code> memang belum keisi data
             (baru keisi otomatis kalau dipakai generate kontrak beneran). Cek pasal, susunan, dan layoutnya di sini.
-        </div>
+        </div> --}}
 
         <div class="card ledger-card">
             <div class="card-body">

@@ -80,6 +80,19 @@
     .ledger-status-line { color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.82rem; }
 
     .ledger-badge { background: var(--brass-tint); color: var(--brass-dark); font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em; padding: 0.4rem 0.85rem; border-radius: 999px; white-space: nowrap; display: inline-block; border: 1px solid rgba(169,129,47,0.25); }
+    .ledger-badge-riwayat { background: var(--brass-tint); color: var(--brass-dark); font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; display: inline-block; border: 1px solid rgba(169,129,47,0.25); margin-left: 0.35rem; }
+    .ledger-btn-ghost:disabled, .ledger-btn-brass:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ledger-inline-status { font-size: 0.8rem; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+    .ledger-spinner {
+        display: inline-block;
+        width: 0.8rem;
+        height: 0.8rem;
+        border: 2px solid rgba(0,0,0,0.15);
+        border-top-color: var(--brass-dark, #a9812f);
+        border-radius: 50%;
+        animation: ledger-spin 0.7s linear infinite;
+    }
+    @keyframes ledger-spin { to { transform: rotate(360deg); } }
 
     .ledger-table-title { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; color: var(--ink); }
     .ledger-table { width: 100%; margin-bottom: 0; border-collapse: collapse; }
