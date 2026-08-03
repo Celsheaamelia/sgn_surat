@@ -23,27 +23,16 @@
                 <a href="{{ route('kontrak.show', $kontrak) }}" class="btn ledger-btn-ghost">
                     <i class="bi bi-arrow-left me-1"></i> Kembali
                 </a>
-                @if (!$kontrak->published_at)
-                    <form method="POST" action="{{ route('kontrak.publish', $kontrak) }}"
-                          onsubmit="return confirm('Publish kontrak ini? Setelah publish, dokumen bisa didownload.')">
-                        @csrf
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check2-circle me-1"></i> Publish
-                        </button>
-                    </form>
-                @else
-                    <a href="{{ route('kontrak.download', $kontrak) }}" class="btn ledger-btn-brass">
-                        <i class="bi bi-file-earmark-word me-1"></i> Download
-                    </a>
-                @endif
+                <a href="{{ route('kontrak.download', $kontrak) }}" class="btn ledger-btn-brass">
+                    <i class="bi bi-file-earmark-word me-1"></i> Download
+                </a>
             </div>
         </div>
 
         @if (!$kontrak->published_at)
             <div class="alert alert-warning">
                 Dokumen ini masih <strong>Draft</strong>. Cek dulu isinya di bawah ini — kalau sudah benar
-                (termasuk template, pasal, nama & jabatan penandatangan, nomor SK), klik <strong>Publish</strong>
-                di atas supaya dokumen bisa didownload.
+                (termasuk template, pasal, nama & jabatan penandatangan, nomor SK).
             </div>
         @endif
 
