@@ -172,17 +172,59 @@
             <div class="col-lg-4">
                 <div class="card ledger-status">
                     <div class="card-body d-flex flex-column gap-3">
-                        <h3 class="ledger-status-title mb-0">Dokumen</h3>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h3 class="ledger-status-title mb-0">Dokumen</h3>
+                            @if ($kontrak->generated_file_path)
+                                <span class="badge bg-success">Tersedia</span>
+                            @else
+                                <span class="badge bg-secondary">Belum Digenerate</span>
+                            @endif
+                        </div>
 
                         @if ($kontrak->generated_file_path)
+                            <a href="{{ route('kontrak.preview', $kontrak) }}" class="btn ledger-btn-ghost w-100">
+                                <i class="bi bi-eye me-1"></i> Preview Dokumen
+                            </a>
                             <a href="{{ route('kontrak.download', $kontrak) }}" class="btn ledger-btn-brass w-100">
                                 <i class="bi bi-file-earmark-word me-1"></i> Unduh Dokumen Word
                             </a>
                         @else
-                            <p class="ledger-help mb-0">Dokumen belum berhasil dibuat.</p>
+                            <button type="button" class="btn ledger-btn-brass w-100" disabled
+                                    title="Dokumen belum digenerate">
+                                <i class="bi bi-file-earmark-word me-1"></i> Download Dokumen Word
+                            </button>
+                            <p class="ledger-help mb-0">Dokumen belum berhasil digenerate.</p>
                         @endif
 
-                        <form method="POST" action="{{ route('kontrak.regenerate', $kontrak) }}" id="regenerateForm">
+                        <hr class="my-1">
+
+                        {{-- Ganti template: dipakai kalau format kontrak berubah (mis. jumlah
+                             poin pasal, atau susunan lain), tanpa perlu ubah kode. Ganti
+                             template otomatis generate ulang & reset status jadi belum-publish. --}}
+                        @php
+                            $templateOptions = \App\Models\Template::where('jenis_kontrak_id', $kontrak->jenis_kontrak_id)
+                                ->orderByDesc('is_default')
+                                ->orderBy('nama_template')
+                                ->get();
+                        @endphp
+                        @if ($templateOptions->count() > 1)
+                            <form method="POST" action="{{ route('kontrak.switch-template', $kontrak) }}" class="d-flex flex-column gap-2">
+                                @csrf
+                                <label class="form-label ledger-subtitle mb-0">Ganti Template</label>
+                                <select name="template_id" class="form-select form-select-sm">
+                                    @foreach ($templateOptions as $tpl)
+                                        <option value="{{ $tpl->id }}" @selected($kontrak->template_id == $tpl->id)>
+                                            {{ $tpl->nama_template }}{{ $tpl->is_default ? ' (Default)' : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn ledger-btn-ghost btn-sm w-100">
+                                    <i class="bi bi-arrow-left-right me-1"></i> Terapkan Template
+                                </button>
+                            </form>
+                        @endif
+
+                        <form method="POST" action="{{ route('kontrak.regenerate', $kontrak) }}">
                             @csrf
                             <button type="submit" class="btn ledger-btn-ghost w-100 d-flex align-items-center justify-content-center gap-2" id="regenerateBtn">
                                 <i class="bi bi-arrow-repeat me-1"></i>

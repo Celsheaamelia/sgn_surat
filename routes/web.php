@@ -13,6 +13,7 @@ use App\Services\GeminiService;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KontrakController;
+use App\Http\Controllers\TemplateController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -151,10 +152,24 @@ function simpanSurat(array $data): void
     Route::get('/kontrak/{kontrak}', [KontrakController::class, 'show'])->name('kontrak.show');
     Route::get('/kontrak/{kontrak}/download', [KontrakController::class, 'download'])->name('kontrak.download');
     Route::post('/kontrak/{kontrak}/regenerate', [KontrakController::class, 'regenerate'])->name('kontrak.regenerate');
+    Route::get('/kontrak/{kontrak}/preview', [KontrakController::class, 'preview'])->name('kontrak.preview');
+    Route::get('/kontrak/{kontrak}/preview/file', [KontrakController::class, 'previewFile'])->name('kontrak.preview.file');
+    // Route::post('/kontrak/{kontrak}/publish', [KontrakController::class, 'publish'])->name('kontrak.publish');
+    Route::post('/kontrak/{kontrak}/switch-template', [KontrakController::class, 'switchTemplate'])->name('kontrak.switch-template');
     Route::get('/kontrak/{kontrak}/upload', [KontrakController::class, 'uploadSignedForm'])->name('kontrak.upload.form');
     Route::post('/kontrak/{kontrak}/upload', [KontrakController::class, 'uploadSigned'])->name('kontrak.upload.store');
     Route::delete('/kontrak/{kontrak}/upload', [KontrakController::class, 'deleteSigned'])->name('kontrak.upload.delete');
     Route::delete('/kontrak/{kontrak}', [KontrakController::class, 'destroy'])->name('kontrak.destroy');
+
+    // Kelola Template Kontrak
+    Route::get('/kontrak-template', [TemplateController::class, 'index'])->name('kontrak-template.index');
+    Route::post('/kontrak-template', [TemplateController::class, 'store'])->name('kontrak-template.store');
+    Route::post('/kontrak-template/{template}/set-default', [TemplateController::class, 'setDefault'])->name('kontrak-template.set-default');
+    Route::post('/kontrak-template/{template}/publish', [TemplateController::class, 'publish'])->name('kontrak-template.publish');
+    Route::get('/kontrak-template/{template}/download', [TemplateController::class, 'download'])->name('kontrak-template.download');
+    Route::delete('/kontrak-template/{template}', [TemplateController::class, 'destroy'])->name('kontrak-template.destroy');
+    Route::get('/kontrak-template/{template}/preview', [TemplateController::class, 'preview'])->name('kontrak-template.preview');
+    Route::get('/kontrak-template/{template}/preview/file', [TemplateController::class, 'previewFile'])->name('kontrak-template.preview.file');
 
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');

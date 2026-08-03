@@ -14,6 +14,7 @@ class Kontrak extends Model
         'karyawan_id',
         'jenis_kontrak_id',
         'penandatangan_id',
+        'template_id',
         'tanggal_mulai',
         'tanggal_selesai',
         'jabatan_kontrak',
@@ -27,6 +28,7 @@ class Kontrak extends Model
         'signed_file_path',
         'signed_file_name',
         'signed_uploaded_at',
+        'published_at',
         'status',
         'user_id',
     ];
@@ -36,6 +38,7 @@ class Kontrak extends Model
         'tanggal_mulai'       => 'date',
         'tanggal_selesai'     => 'date',
         'signed_uploaded_at'  => 'datetime',
+        'published_at'        => 'datetime',
         'gaji_pokok'          => 'decimal:2',
     ];
 
@@ -57,5 +60,10 @@ class Kontrak extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function template()
+    {
+        return $this->belongsTo(Template::class);
     }
 }

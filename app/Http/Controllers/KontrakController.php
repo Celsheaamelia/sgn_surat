@@ -6,6 +6,7 @@ use App\Models\Kontrak;
 use App\Models\Karyawan;
 use App\Models\JenisKontrak;
 use App\Models\Penandatangan;
+use App\Models\Template;
 use App\Services\DocxTemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -150,11 +151,21 @@ class KontrakController extends Controller
         $nomorKontrak = $this->buildNomorKontrak($jenisKontrak, $request->tanggal, $urut);
         $tanggalSelesai = $jenisKontrak->masa_giling ? null : $request->tanggal_selesai;
 
+        // Template default aktif untuk jenis kontrak ini DIBEKUKAN ke kontrak
+        // yang baru dibuat (disimpan sebagai template_id). Kalau nanti
+        // default-nya diganti (upload template baru & jadikan default),
+        // kontrak yang sudah ada ini TIDAK ikut berubah - hanya kontrak yang
+        // dibuat SETELAH pergantian yang otomatis pakai template baru.
+        $templateDefault = Template::where('jenis_kontrak_id', $jenisKontrak->id)
+            ->where('is_default', true)
+            ->first();
+
         $kontrak = Kontrak::create([
             'nomor_kontrak'        => $nomorKontrak,
             'tanggal'              => $request->tanggal,
             'karyawan_id'          => $karyawan->id,
             'jenis_kontrak_id'     => $jenisKontrak->id,
+            'template_id'          => $templateDefault?->id,
             'penandatangan_id'     => $penandatangan?->id,
             'tanggal_mulai'        => $request->tanggal_mulai,
             'tanggal_selesai'      => $tanggalSelesai,
@@ -205,14 +216,19 @@ class KontrakController extends Controller
 
     private function generateDocument(Kontrak $kontrak, DocxTemplateService $docxService): string
     {
-        $kontrak->load(['karyawan', 'jenisKontrak', 'penandatangan']);
+        $kontrak->load(['karyawan', 'jenisKontrak', 'penandatangan', 'template']);
         $karyawan = $kontrak->karyawan;
         $jenis    = $kontrak->jenisKontrak;
         $ttd      = $kontrak->penandatangan;
 
-        $templatePath = $jenis->template_file
-            ? Storage::path($jenis->template_file)
-            : Storage::path('templates/kontrak/default_template.docx');
+        // Urutan prioritas template: template yang sudah dipilih eksplisit
+        // buat kontrak ini (lewat tombol "Ganti Template") > template
+        // bawaan jenis kontrak > default_template.docx.
+        $templatePath = $kontrak->template
+            ? Storage::path($kontrak->template->file_path)
+            : ($jenis->template_file
+                ? Storage::path($jenis->template_file)
+                : Storage::path('templates/kontrak/default_template.docx'));
 
         if (!file_exists($templatePath)) {
             $templatePath = Storage::path('templates/kontrak/default_template.docx');
@@ -236,10 +252,10 @@ class KontrakController extends Controller
 
             'NAMA_PENANDATANGAN'        => $ttd->nama ?? $ttd->jabatan ?? '-',
             'JABATAN_PENANDATANGAN'     => $ttd->jabatan ?? '-',
-            'NO_SK_PENANDATANGAN'       => 'BD01-KOLE-SKP/20260708.009',
-            'TANGGAL_SK_PENANDATANGAN'  => '08-07-2026',
-                // ? Carbon::parse($ttd->tanggal_sk)->format('d-m-Y')
-                // : '-',
+            'NO_SK_PENANDATANGAN'       => $ttd->no_sk ?? '-',
+            'TANGGAL_SK_PENANDATANGAN'  => $ttd?->tanggal_sk
+                ? Carbon::parse($ttd->tanggal_sk)->format('d-m-Y')
+                : '-',
 
             'NAMA_KARYAWAN'             => $karyawan->nama,
             'NIK_KARYAWAN'              => $karyawan->nik,
@@ -301,10 +317,79 @@ class KontrakController extends Controller
             return back()->with('error', 'File dokumen kontrak belum tersedia.');
         }
 
+        $kontrak->loadMissing('template');
+        if ($kontrak->template && !$kontrak->template->published_at) {
+            return back()->with('error', 'Template yang dipakai kontrak ini belum dipublish. Publish dulu template-nya di halaman Kelola Template.');
+        }
+
         $filename = str_replace(['/', '\\'], '-', $kontrak->nomor_kontrak) . '.docx';
 
         return Storage::download($kontrak->generated_file_path, $filename);
     }
+
+    public function preview(Kontrak $kontrak)
+    {
+        if (!$kontrak->generated_file_path || !Storage::exists($kontrak->generated_file_path)) {
+            return back()->with('error', 'Dokumen belum digenerate, tidak bisa dipreview.');
+        }
+
+        $kontrak->load(['karyawan', 'jenisKontrak', 'penandatangan', 'template']);
+
+        return view('kontrak.preview', [
+            'kontrak' => $kontrak,
+            'docxUrl' => route('kontrak.preview.file', $kontrak),
+        ]);
+    }
+
+    /**
+     * Kirim raw bytes file .docx (dipanggil via fetch() dari JS di halaman
+     * preview, lalu di-render langsung di browser - bukan didownload).
+     */
+    public function previewFile(Kontrak $kontrak)
+    {
+        if (!$kontrak->generated_file_path || !Storage::exists($kontrak->generated_file_path)) {
+            abort(404);
+        }
+
+        return response(Storage::get($kontrak->generated_file_path), 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'inline',
+        ]);
+    }
+
+    /**
+     * Tandai kontrak sebagai sudah dipublish. Setelah ini baru boleh didownload.
+     */
+
+
+    /**
+     * Ganti template dokumen untuk kontrak ini, lalu generate ulang.
+     * Publish status di-reset ke belum-publish karena isi dokumen berubah -
+     * user wajib preview & publish ulang sebelum bisa download lagi.
+     */
+    public function switchTemplate(Request $request, Kontrak $kontrak, DocxTemplateService $docxService)
+    {
+        $request->validate([
+            'template_id' => 'required|exists:templates,id',
+        ]);
+
+        $kontrak->update([
+            'template_id'  => $request->template_id,
+        ]);
+
+        try {
+            $generatedPath = $this->generateDocument($kontrak, $docxService);
+            $kontrak->update(['generated_file_path' => $generatedPath]);
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'Gagal generate ulang dengan template baru: ' . $e->getMessage());
+        }
+
+        return redirect()->route('kontrak.show', $kontrak)
+            ->with('success', 'Template berhasil diganti. Silakan preview lagi sebelum publish.');
+    }
+
+    // public function regenerate(Kontrak $kontrak, DocxTemplateService $docxService)
 
     public function regenerate(Request $request, Kontrak $kontrak, DocxTemplateService $docxService)
     {
