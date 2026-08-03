@@ -362,7 +362,7 @@
                 <div class="card stat-card h-100">
                     <div class="card-body d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="stat-label">Sudah Upload</div>
+                            <div class="stat-label">Sudah Unggah</div>
                             <div class="stat-value">{{ $sudahUpload }}</div>
                             <div class="stat-trend up">
                                 <i class="bi bi-check2-circle"></i> {{ $persenUpload }}%
@@ -379,7 +379,7 @@
                 <div class="card stat-card h-100">
                     <div class="card-body d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="stat-label">Belum Upload</div>
+                            <div class="stat-label">Belum Unggah</div>
                             <div class="stat-value">{{ $belumUpload }}</div>
                             <div class="stat-trend warn">
                                 <i class="bi bi-exclamation-circle"></i> Perlu tindak lanjut
