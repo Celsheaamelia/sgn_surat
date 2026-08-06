@@ -14,10 +14,15 @@ use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KontrakController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\WismaTamuController;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// Tampilan TV Wisma Tamu — publik, tanpa login, dibuka langsung di browser TV resepsionis.
+Route::get('/wisma-tamu/tv', [WismaTamuController::class, 'tv'])->name('wisma-tamu.tv');
+Route::get('/wisma-tamu/tv/data', [WismaTamuController::class, 'tvData'])->name('wisma-tamu.tv-data');
 
 // Login
 Route::middleware('guest')->group(function () {
@@ -173,6 +178,14 @@ function simpanSurat(array $data): void
 
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');
+
+    // Wisma Tamu
+    Route::get('/wisma-tamu', [WismaTamuController::class, 'index'])->name('wisma-tamu.index');
+    Route::get('/wisma-tamu/tambah', [WismaTamuController::class, 'create'])->name('wisma-tamu.create');
+    Route::post('/wisma-tamu', [WismaTamuController::class, 'store'])->name('wisma-tamu.store');
+    Route::get('/wisma-tamu/{wismaTamu}/edit', [WismaTamuController::class, 'edit'])->name('wisma-tamu.edit');
+    Route::put('/wisma-tamu/{wismaTamu}', [WismaTamuController::class, 'update'])->name('wisma-tamu.update');
+    Route::delete('/wisma-tamu/{wismaTamu}', [WismaTamuController::class, 'destroy'])->name('wisma-tamu.destroy');
 
         Route::get('/test-gemini', function (GeminiService $gemini) {
     return $gemini->generateText('Halo, siapa kamu?');
