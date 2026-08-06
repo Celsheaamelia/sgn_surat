@@ -114,6 +114,37 @@
                 </div>
             </li>
 
+            <li class="nav-group">
+                <div class="nav-link nav-link-parent nav-link-static {{ request()->routeIs('wisma-tamu.*') ? 'active' : '' }}">
+                    <i class="bi bi-building"></i>
+                    <span>Wisma Tamu</span>
+                </div>
+                <div id="wismaTamuMenu">
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="{{ route('wisma-tamu.create') }}"
+                               class="nav-sublink {{ request()->routeIs('wisma-tamu.create') || request()->routeIs('wisma-tamu.store') ? 'active' : '' }}">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Input Tamu</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('wisma-tamu.index') }}"
+                               class="nav-sublink {{ request()->routeIs('wisma-tamu.index') || request()->routeIs('wisma-tamu.edit') ? 'active' : '' }}">
+                                <i class="bi bi-door-open"></i>
+                                <span>Daftar Kamar &amp; Tamu</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('wisma-tamu.tv') }}" target="_blank" class="nav-sublink">
+                                <i class="bi bi-tv"></i>
+                                <span>Buka Tampilan TV</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
         </ul>
     </div>
 
@@ -325,10 +356,20 @@
 
     @media (max-width: 767px) {
         .sidebar {
-            position: static;
-            width: 100%;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 280px;
             height: auto;
-            box-shadow: none;
+            box-shadow: 18px 0 40px rgba(6, 78, 59, 0.25);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1050;
+        }
+
+        .sidebar.sidebar-open {
+            transform: translateX(0);
         }
     }
 </style>
