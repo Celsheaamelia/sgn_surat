@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
+use App\Models\Kontrak;
 
 class KaryawanController extends Controller
 {
@@ -32,13 +33,17 @@ class KaryawanController extends Controller
         $karyawanList = Karyawan::query()
             ->with(['latestKontrak.jenisKontrak'])
             ->when($request->search, fn ($q) => $this->applySearch($q, $request->search))
-            // Filter status kepegawaian (PKWT DMG saja / PKWT DMG-LMG 12 bulan),
-            // dicek dari jenis_kontrak kontrak PALING BARU milik karyawan --
-            // bukan kolom manual, biar konsisten sama data yang diimpor dari Excel.
             ->when($request->status_kontrak, function ($q) use ($request) {
                 $masaGiling = $request->status_kontrak === 'dmg';
                 $q->whereHas('latestKontrak.jenisKontrak', function ($qq) use ($masaGiling) {
                     $qq->where('masa_giling', $masaGiling);
+                });
+            })
+            // Filter Bagian: dicek dari bagian_kontrak di kontrak PALING BARU
+            // milik karyawan, konsisten sama filter status_kontrak di atas.
+            ->when($request->bagian, function ($q) use ($request) {
+                $q->whereHas('latestKontrak', function ($qq) use ($request) {
+                    $qq->where('bagian_kontrak', $request->bagian);
                 });
             })
             ->orderBy('nama')
@@ -49,8 +54,23 @@ class KaryawanController extends Controller
             return view('karyawan._table', compact('karyawanList'))->render();
         }
 
-        return view('karyawan.index', compact('karyawanList'));
-    }
+        // Daftar Bagian unik yang beneran ada di data, buat isi dropdown filter -
+        // diambil dari kontrak TERBARU tiap karyawan (bukan semua histori kontrak),
+        // biar konsisten sama logika filter status_kontrak.
+        $bagianList = Kontrak::query()
+            ->whereIn('id', function ($sub) {
+                $sub->selectRaw('MAX(id)')
+                    ->from('kontraks')
+                    ->groupBy('karyawan_id');
+            })
+            ->whereNotNull('bagian_kontrak')
+            ->where('bagian_kontrak', '!=', '')
+            ->distinct()
+            ->orderBy('bagian_kontrak')
+            ->pluck('bagian_kontrak');
+
+        return view('karyawan.index', compact('karyawanList', 'bagianList'));
+}
 
     public function create()
     {

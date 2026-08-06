@@ -25,7 +25,7 @@
 
             <div class="d-flex gap-2">
                 <a href="{{ route('kontrak-template.index') }}" class="btn ledger-btn-ghost">
-                    <i class="bi bi-file-earmark-text me-1"></i> Kelola Template
+                    <i class="bi bi-file-earmark-text me-1"></i> Kelola Format
                 </a>
                 <a href="{{ route('kontrak.create') }}" class="btn ledger-btn-brass">
                     <i class="bi bi-file-earmark-plus me-1"></i> Buat Kontrak
@@ -47,7 +47,7 @@
             </select>
 
             <select id="bagianFilter" class="form-select" style="flex: 1 1 160px; min-width: 140px; width: auto;">
-                <option value="">Pilih bagian kontrak yang akan di unduh</option>
+                <option value="">Pilih bagian </option>
                 @foreach ($bagianList as $bagianOpt)
                     <option value="{{ $bagianOpt }}" @selected(request('bagian') == $bagianOpt)>{{ $bagianOpt }}</option>
                 @endforeach

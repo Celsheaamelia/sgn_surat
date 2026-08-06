@@ -49,8 +49,6 @@ class TemplateController extends Controller
         'TANGGAL_KONTRAK_TERBILANG',
         'BULAN_KONTRAK',
         'TANGGAL_KONTRAK_SINGKAT',
-        'NAMA_PENANDATANGAN',
-        'JABATAN_PENANDATANGAN',
         'NAMA_KARYAWAN',
         'NO_KTP_KARYAWAN',
         'TEMPAT_TANGGAL_LAHIR',

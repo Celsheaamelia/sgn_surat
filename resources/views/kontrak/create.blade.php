@@ -36,7 +36,7 @@
                         <a href="{{ Route::has('kontrak-template.index') ? route('kontrak-template.index') : url('/kontrak-template') }}"
                            class="btn btn-sm ledger-btn-ghost">
                             <i class="bi bi-file-earmark-text me-1"></i>
-                            Kelola Template
+                            Kelola Format
                         </a>
                     </div>
 
@@ -89,8 +89,8 @@
                                         </select>
                                         {{-- Tombol Preview Template --}}
                                         <button type="button" id="previewTemplateBtn" class="btn ledger-btn-ghost flex-shrink-0" disabled title="Pilih jenis kontrak dulu">
-                                            <i class="bi bi-eye me-1"></i>
-                                            Preview
+                                            {{-- <i class="bi bi-eye me-1"></i> --}}
+                                            {{-- Pratinjau --}}
                                         </button>
                                     </div>
                                 </div>
@@ -176,7 +176,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center gap-2 mb-4">
                             <i class="bi bi-eye"></i>
-                            <h3 class="ledger-stamp-title mb-0">Live Preview</h3>
+                            <h3 class="ledger-stamp-title mb-0">Pratinjau</h3>
                         </div>
 
                         <div class="ledger-stamp-box mb-4">

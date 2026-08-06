@@ -19,7 +19,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h2 class="ledger-title mb-1">Kelola Template Kontrak</h2>
+                <h2 class="ledger-title mb-1">Kelola Format Kontrak</h2>
                 {{-- <p class="ledger-subtitle mb-0">Template yang ditandai <strong>Default</strong> akan otomatis dipakai untuk kontrak baru yang dibuat setelah ini. Kontrak yang sudah ada tidak berubah.</p>
                 <p class="ledger-subtitle mb-0">Ada perubahan pasal? Klik <i class="bi bi-download"></i> <strong>Download</strong> untuk ambil filenya, edit di Word (placeholder <code>@{{...}}</code> jangan disentuh), lalu upload lagi lewat tombol Upload Template di bawah.</p> --}}
             </div>

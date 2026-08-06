@@ -9,7 +9,7 @@
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
-                <h2 class="ledger-title mb-1">Preview Template</h2>
+                <h2 class="ledger-title mb-1">Pratinjau Format</h2>
                 <p class="ledger-subtitle mb-0">{{ $template->nama_template }}</p>
             </div>
             <a href="{{ route('kontrak-template.index') }}" class="btn ledger-btn-ghost">
