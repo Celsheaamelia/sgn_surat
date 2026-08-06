@@ -149,7 +149,7 @@
 
         <div class="d-flex align-items-center ms-auto">
             <button class="sidebar-toggle-btn" id="sidebarToggleBtn" type="button" aria-label="Buka menu">
-                <i class="bi bi-list"></i>
+                <i class="bi bi-three-dots-vertical"></i>
             </button>
 
             <div class="dropdown">
