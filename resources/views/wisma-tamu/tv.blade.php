@@ -362,6 +362,82 @@
             from { width: 0%; }
             to   { width: 100%; }
         }
+
+        @media (max-width: 600px) {
+    /* --- Header --- */
+    .tv-topbar {
+        flex-wrap: wrap;
+        row-gap: 0.6vh;
+    }
+    .tv-brand {
+        font-size: 1.15rem;
+        white-space: nowrap;
+        order: 1;
+    }
+    .tv-right {
+        order: 2;
+        gap: 0.8rem;
+    }
+    .tv-live {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.6rem;
+    }
+    .tv-clock {
+        font-size: 1rem;
+    }
+    .tv-slide-label {
+        order: 3;
+        flex-basis: 100%;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        padding-left: calc(15px + 0.8rem); /* sejajar dgn teks "Wisma Tamu", bukan titiknya */
+    }
+
+    /* --- List kamar --- */
+    .tv-list {
+        gap: 0.8vh;
+        padding: 1vh 3vw 1vh;
+    }
+    .room-row {
+        flex-wrap: wrap;
+        row-gap: 0.3rem;
+        padding: 1vh 3vw;
+    }
+    .room-icon {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+    }
+    .room-number {
+        width: auto;
+        min-width: 50px;
+        font-size: 1.8rem;
+    }
+    .room-status {
+        width: auto;
+        min-width: 70px;
+        font-size: 0.85rem;
+    }
+    .room-guest {
+        font-size: 1rem;
+        min-width: 0;
+        margin-left: auto;   /* dorong nama ke pojok kanan, dekat status */
+        text-align: right;
+        flex: 0 1 auto;
+    }
+    .room-checkout {
+        flex-basis: 100%;
+        order: 5;
+        white-space: normal;
+        font-size: 0.8rem;
+        margin-left: calc(44px + 1.6vw); /* sejajar dgn angka kamar, bukan mepet ikon */
+    }
+    .room-guest:empty,
+    .room-checkout:empty {
+        display: none;
+    }
+}
     </style>
 </head>
 <body>
