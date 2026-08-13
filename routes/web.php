@@ -15,6 +15,11 @@ use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KontrakController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WismaTamuController;
+use App\Http\Controllers\PatroliController;
+use App\Http\Controllers\CheckpointController;
+use App\Http\Controllers\MonitoringController;
+use App\Http\Controllers\PatroliJadwalController;
+use App\Http\Controllers\NotifikasiController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -36,6 +41,66 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google', [RegisterController::class, 'redirectToGoogle'])->name('google.redirect');
     Route::get('/auth/google/callback', [RegisterController::class, 'handleGoogleCallback'])->name('google.callback');
 
+});
+
+// ================= PATROLI DIGITAL =================
+// Seluruh grup ini dibungkus middleware('auth') supaya user yang belum login
+// diarahkan ke halaman /login (bukan dapat halaman 403 dari middleware role).
+Route::middleware('auth')->group(function () {
+
+    Route::prefix('patroli')->name('patroli.')->group(function () {
+
+        // Satpam
+        Route::middleware('role:satpam')->group(function () {
+            Route::get('/', [PatroliController::class, 'index'])->name('index');
+            Route::post('/mulai', [PatroliController::class, 'start'])->name('start');
+            Route::get('/scan/{kode}', [PatroliController::class, 'scanForm'])->name('scan.form');
+            Route::post('/scan/{kode}', [PatroliController::class, 'store'])->name('scan.store');
+            Route::post('/selesai', [PatroliController::class, 'finish'])->name('finish');
+            Route::get('/riwayat', [PatroliController::class, 'riwayat'])->name('riwayat');
+            Route::get('/riwayat/{sesi}', [PatroliController::class, 'riwayatShow'])->name('riwayat.show');
+        });
+
+        // Checkpoint: admin full, supervisor cuma lihat/toggle/cetak
+        Route::prefix('checkpoint')->name('checkpoint.')->group(function () {
+            Route::middleware('role:admin,supervisor')->group(function () {
+                Route::get('/', [CheckpointController::class, 'index'])->name('index');
+                Route::get('/cetak', [CheckpointController::class, 'print'])->name('print');
+                Route::patch('/{checkpoint}/toggle', [CheckpointController::class, 'toggleAktif'])->name('toggle');
+            });
+
+            Route::middleware('role:admin')->group(function () {
+                Route::post('/', [CheckpointController::class, 'store'])->name('store');
+                Route::put('/{checkpoint}', [CheckpointController::class, 'update'])->name('update');
+                Route::delete('/{checkpoint}', [CheckpointController::class, 'destroy'])->name('destroy');
+            });
+        });
+
+        // Jadwal patroli: admin & supervisor menugaskan satpam per tanggal
+        Route::middleware('role:admin,supervisor')->prefix('jadwal')->name('jadwal.')->group(function () {
+            Route::get('/', [PatroliJadwalController::class, 'index'])->name('index');
+            Route::post('/', [PatroliJadwalController::class, 'store'])->name('store');
+            Route::delete('/{jadwal}', [PatroliJadwalController::class, 'destroy'])->name('destroy');
+        });
+
+        // Monitoring: admin & supervisor
+        Route::middleware('role:admin,supervisor')->prefix('monitoring')->name('monitoring.')->group(function () {
+            Route::get('/', [MonitoringController::class, 'index'])->name('index');
+            Route::get('/data', [MonitoringController::class, 'data'])->name('data');
+            Route::get('/riwayat', [MonitoringController::class, 'riwayat'])->name('riwayat');
+            Route::get('/laporan', [MonitoringController::class, 'laporan'])->name('laporan');
+            Route::get('/laporan/export', [MonitoringController::class, 'exportLaporan'])->name('laporan.export');
+            Route::get('/{sesi}', [MonitoringController::class, 'show'])->name('show');
+            Route::post('/scan/{scan}/tindak-lanjut', [MonitoringController::class, 'tindakLanjut'])->name('tindak-lanjut');
+        });
+    });
+
+    // Notifikasi (lonceng navbar) — dipakai admin/supervisor untuk temuan patroli
+    Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
+        Route::get('/data', [NotifikasiController::class, 'data'])->name('data');
+        Route::post('/{id}/baca', [NotifikasiController::class, 'baca'])->name('baca');
+        Route::post('/baca-semua', [NotifikasiController::class, 'bacaSemua'])->name('baca-semua');
+    });
 });
 
 // Helper: baca data surat dari file JSON
