@@ -4,7 +4,7 @@
 @include('patroli._styles')
 
 @php
-    $isAdmin = (auth()->user()->role ?? null) === 'admin';
+    $isAdmin = (auth()->user()->role ?? null) === 'supervisor';
 @endphp
 
 <div class="patroli-page">

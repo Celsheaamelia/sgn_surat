@@ -7,6 +7,7 @@ use App\Models\PatrolCheckpoint;
 use App\Models\PatrolSchedule;
 use App\Models\PatrolScan;
 use App\Models\PatrolSession;
+use App\Services\PeopleOneService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -35,18 +36,27 @@ class PatroliController extends Controller
         // kalau admin lupa input jadwal, tapi petugas & supervisor tetap sadar statusnya.
         $jadwalHariIni = PatrolSchedule::where('user_id', $user->id)->hariIni()->first();
 
+        // Titik checkpoint berikutnya yang wajib discan sesuai urutan rute, dipakai
+        // untuk menandai titik-titik lain sebagai "terkunci" di tampilan satpam.
+        $urutanBerikutnya = null;
+        if ($sesi) {
+            $titikBelumScan = $checkpoints->whereNotIn('id', $scanByCheckpoint->keys())->sortBy('urutan')->first();
+            $urutanBerikutnya = $titikBelumScan?->urutan;
+        }
+
         return view('patroli.satpam.index', [
             'sesi'             => $sesi,
             'checkpoints'      => $checkpoints,
             'scanByCheckpoint' => $scanByCheckpoint,
             'jadwalHariIni'    => $jadwalHariIni,
+            'urutanBerikutnya' => $urutanBerikutnya,
         ]);
     }
 
     /**
      * Mulai shift patroli baru untuk hari ini.
      */
-    public function start()
+    public function start(PeopleOneService $peopleOne)
     {
         $user = Auth::user();
 
@@ -58,6 +68,20 @@ class PatroliController extends Controller
         if ($sesiBerjalan) {
             return redirect()->route('patroli.index')
                 ->with('info', 'Anda sudah memiliki shift patroli yang sedang berjalan.');
+        }
+
+        // SOP 1. Persiapan: "Login ke aplikasi patroli & Absensi People One". Cek ini HANYA
+        // dijalankan kalau integrasi People One sudah diaktifkan lewat config (lihat
+        // PeopleOneService); selama belum aktif atau API gagal dihubungi, TIDAK memblokir
+        // petugas mulai patroli — supaya sistem tidak macet karena dependensi eksternal.
+        if ($peopleOne->aktif()) {
+            $sudahAbsen = $peopleOne->sudahAbsenMasuk($user, now()->toDateString());
+
+            if ($sudahAbsen === false) {
+                return redirect()->route('patroli.index')
+                    ->with('error', 'Anda belum tercatat absen masuk di People One hari ini. Silakan absen dulu sebelum memulai patroli.');
+            }
+            // $sudahAbsen === null (API gagal/tidak bisa dicek) sengaja tidak diblokir.
         }
 
         PatrolSession::create([
@@ -90,6 +114,15 @@ class PatroliController extends Controller
                 ->with('info', "Titik {$checkpoint->nama_titik} sudah dicatat pada shift ini.");
         }
 
+        // SOP 2. Pelaksanaan Patroli: "menjalankan patroli sesuai rute" — titik harus
+        // discan berurutan mengikuti kolom `urutan`, bukan bebas pilih titik manapun.
+        if ($titikBerikutnya = $this->titikBerikutnyaYangHarusDiscan($sesi, $checkpoint)) {
+            return redirect()->route('patroli.index')->with(
+                'error',
+                "Belum sesuai urutan rute. Titik berikutnya yang harus discan adalah \"{$titikBerikutnya->nama_titik}\" ({$titikBerikutnya->kode})."
+            );
+        }
+
         return view('patroli.satpam.scan', [
             'checkpoint' => $checkpoint,
             'sesi'       => $sesi,
@@ -111,6 +144,15 @@ class PatroliController extends Controller
     if ($sudahScan) {
         return redirect()->route('patroli.index')
             ->with('info', "Titik {$checkpoint->nama_titik} sudah dicatat pada shift ini.");
+    }
+
+    // Validasi cadangan sisi server: tolak submit kalau ada titik sebelumnya (sesuai urutan)
+    // yang belum discan, meski request langsung ke endpoint store (bypass form scanForm).
+    if ($titikBerikutnya = $this->titikBerikutnyaYangHarusDiscan($sesi, $checkpoint)) {
+        return redirect()->route('patroli.index')->with(
+            'error',
+            "Belum sesuai urutan rute. Titik berikutnya yang harus discan adalah \"{$titikBerikutnya->nama_titik}\" ({$titikBerikutnya->kode})."
+        );
     }
 
     $data = $request->validate([
@@ -239,6 +281,30 @@ class PatroliController extends Controller
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $bumiRadiusMeter * $c;
+    }
+
+    /**
+     * SOP mensyaratkan patroli "sesuai rute". Checkpoint diurutkan lewat kolom `urutan`
+     * (lihat PatrolCheckpoint::scopeUrut). Kalau ada checkpoint aktif dengan urutan lebih
+     * kecil dari checkpoint yang mau discan dan BELUM tercatat di sesi ini, maka checkpoint
+     * yang mau discan sekarang belum boleh — kembalikan titik yang seharusnya discan duluan.
+     *
+     * Checkpoint dengan urutan sama dianggap boleh dalam urutan bebas relatif satu sama lain
+     * (mis. dua titik paralel), jadi hanya urutan LEBIH KECIL yang memblokir.
+     * Return null kalau checkpoint ini memang boleh discan sekarang.
+     */
+    private function titikBerikutnyaYangHarusDiscan(PatrolSession $sesi, PatrolCheckpoint $checkpointDituju): ?PatrolCheckpoint
+    {
+        $sudahDiscanIds = PatrolScan::where('patrol_session_id', $sesi->id)
+            ->pluck('patrol_checkpoint_id');
+
+        $titikTerlewat = PatrolCheckpoint::aktif()
+            ->where('urutan', '<', $checkpointDituju->urutan)
+            ->whereNotIn('id', $sudahDiscanIds)
+            ->urut()
+            ->first();
+
+        return $titikTerlewat;
     }
 
     private function sesiAktifOrFail(): PatrolSession

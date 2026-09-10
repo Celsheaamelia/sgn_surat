@@ -57,7 +57,7 @@
                         </ul>
                     </div>
                 </li>
-            @elseif ($role === 'supervisor' || $role === 'admin')
+            @elseif ($role === 'supervisor')
                 @php
                     $patroliActive = request()->routeIs('patroli.monitoring.*') || request()->routeIs('patroli.checkpoint.*') || request()->routeIs('patroli.jadwal.*');
                 @endphp
@@ -66,7 +66,7 @@
                         <i class="bi bi-shield-check"></i>
                         <span>Patroli Digital</span>
                     </div>
-                    <div id="patroliMenu{{ $role === 'admin' ? 'Admin' : '' }}">
+                    <div id="patroliMenu">
                         <ul class="nav-submenu">
                             <li>
                                 <a href="{{ route('patroli.monitoring.index') }}"
@@ -100,7 +100,7 @@
                                 <a href="{{ route('patroli.checkpoint.index') }}"
                                    class="nav-sublink {{ request()->routeIs('patroli.checkpoint.index') ? 'active' : '' }}">
                                     <i class="bi bi-geo-alt"></i>
-                                    <span>{{ $role === 'admin' ? 'Kelola Checkpoint' : 'Titik Checkpoint' }}</span>
+                                    <span>Kelola Checkpoint</span>
                                 </a>
                             </li>
                             <li>

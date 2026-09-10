@@ -100,6 +100,14 @@
                                     </div>
                                     @if ($scan->ditangani_at)
                                         <span class="patroli-pill ditangani"><i class="bi bi-check2-all"></i> Sudah ditangani</span>
+                                    @elseif ($scan->eskalasi_level > 0)
+                                        <span class="patroli-pill bahaya">
+                                            <i class="bi bi-alarm"></i>
+                                            Eskalasi level {{ $scan->eskalasi_level }}
+                                            @if ($scan->eskalasi_terakhir_at)
+                                                &middot; terakhir {{ $scan->eskalasi_terakhir_at->diffForHumans() }}
+                                            @endif
+                                        </span>
                                     @endif
                                 </div>
 

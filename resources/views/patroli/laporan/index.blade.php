@@ -14,15 +14,21 @@
                     {{ $mulai->translatedFormat('d M Y') }} &ndash; {{ $selesai->translatedFormat('d M Y') }}
                 </p>
             </div>
-            <button onclick="window.print()" class="btn patroli-btn-ghost">
-                <i class="bi bi-printer"></i> Cetak Laporan
-            </button>
+            <div class="d-flex gap-2">
+                <a href="{{ route('patroli.monitoring.laporan.export', ['jenis' => $jenis, 'tanggal' => $anchor->toDateString()]) }}"
+                   class="btn patroli-btn-ghost">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+                </a>
+                <button onclick="window.print()" class="btn patroli-btn-ghost">
+                    <i class="bi bi-printer"></i> Cetak Laporan
+                </button>
+            </div>
         </div>
 
         {{-- ===== Filter periode ===== --}}
         <div class="patroli-card mb-4 d-print-none">
             <div class="card-body">
-                <form action="{{ route('patroli.laporan.index') }}" method="GET" class="row g-2 align-items-end">
+                <form action="{{ route('patroli.monitoring.laporan') }}" method="GET" class="row g-2 align-items-end">
                     <div class="col-auto">
                         <label class="form-label small mb-1">Jenis Laporan</label>
                         <select name="jenis" class="form-select form-select-sm" onchange="this.form.submit()">

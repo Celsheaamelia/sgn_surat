@@ -20,13 +20,16 @@ class PatrolScan extends Model
         'scanned_at',
         'tindak_lanjut',
         'ditangani_at',
+        'eskalasi_level',
+        'eskalasi_terakhir_at',
     ];
 
     protected $casts = [
-        'scanned_at'   => 'datetime',
-        'ditangani_at' => 'datetime',
-        'latitude'     => 'float',
-        'longitude'    => 'float',
+        'scanned_at'            => 'datetime',
+        'ditangani_at'          => 'datetime',
+        'eskalasi_terakhir_at'  => 'datetime',
+        'latitude'              => 'float',
+        'longitude'             => 'float',
     ];
 
     public function session()

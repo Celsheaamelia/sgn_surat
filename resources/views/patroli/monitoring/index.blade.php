@@ -73,6 +73,22 @@
         </div>
 
         <div class="row g-4">
+            {{-- ===== Peta area pabrik + posisi petugas (SOP B.1) ===== --}}
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="patroli-title mb-0" style="font-size: 1.05rem;">Peta Area &amp; Posisi Petugas</h6>
+                    <span class="patroli-subtitle small">
+                        <i class="bi bi-info-circle"></i>
+                        Posisi diambil dari GPS scan checkpoint terakhir tiap petugas (bukan tracking GPS kontinu)
+                    </span>
+                </div>
+                <div class="patroli-card mb-4">
+                    <div class="card-body p-0">
+                        <div id="peta-monitoring" style="height: 420px; border-radius: 14px; overflow: hidden;"></div>
+                    </div>
+                </div>
+            </div>
+
             {{-- ===== Daftar shift hari ini ===== --}}
             <div class="col-lg-7">
                 <h6 class="patroli-title mb-3" style="font-size: 1.05rem;">Shift Hari Ini</h6>
@@ -157,6 +173,97 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // ===== Peta area pabrik + posisi petugas (real-time via polling) =====
+    const checkpointPeta = @json($checkpointPeta);
+    let posisiPetugas = @json($posisiPetugas);
+
+    const petaEl = document.getElementById('peta-monitoring');
+    let peta = null;
+    let markerCheckpoint = [];
+    let markerPetugas = {}; // keyed by session_id, supaya bisa "digeser" bukan dibuat ulang tiap polling
+
+    function inisialisasiPeta() {
+        if (!petaEl) return;
+
+        // Pusatkan peta di rata-rata koordinat checkpoint (fallback: Djatiroto, Lumajang)
+        let pusatLat = -8.169, pusatLng = 113.223;
+        if (checkpointPeta.length > 0) {
+            pusatLat = checkpointPeta.reduce((sum, c) => sum + parseFloat(c.latitude), 0) / checkpointPeta.length;
+            pusatLng = checkpointPeta.reduce((sum, c) => sum + parseFloat(c.longitude), 0) / checkpointPeta.length;
+        }
+
+        peta = L.map('peta-monitoring').setView([pusatLat, pusatLng], 17);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(peta);
+
+        // Marker checkpoint (statis, warna abu-abu)
+        const iconCheckpoint = L.divIcon({
+            className: '',
+            html: '<div style="background:#64748b;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+        });
+
+        checkpointPeta.forEach(cp => {
+            const m = L.marker([cp.latitude, cp.longitude], { icon: iconCheckpoint })
+                .addTo(peta)
+                .bindPopup(`<strong>${cp.nama_titik}</strong><br>${cp.kode}${cp.area ? ' &middot; ' + cp.area : ''}`);
+            markerCheckpoint.push(m);
+        });
+
+        perbaruiMarkerPetugas();
+    }
+
+    function iconPetugas(terlambat) {
+        const warna = terlambat ? '#ef4444' : '#22c55e';
+        return L.divIcon({
+            className: '',
+            html: `<div style="background:${warna};width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;">
+                     <i class="bi bi-person-fill" style="color:white;font-size:11px;"></i>
+                   </div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+        });
+    }
+
+    function perbaruiMarkerPetugas() {
+        if (!peta) return;
+
+        const idAktif = new Set(posisiPetugas.map(p => p.session_id));
+
+        // Hapus marker petugas yang sesinya sudah tidak aktif lagi (selesai/hilang dari daftar)
+        Object.keys(markerPetugas).forEach(id => {
+            if (!idAktif.has(parseInt(id))) {
+                peta.removeLayer(markerPetugas[id]);
+                delete markerPetugas[id];
+            }
+        });
+
+        posisiPetugas.forEach(p => {
+            const popupHtml = `<strong>${p.petugas}</strong><br>Titik terakhir: ${p.titik} (${p.waktu})<br><a href="${p.detail_url}">Lihat detail &rarr;</a>`;
+
+            if (markerPetugas[p.session_id]) {
+                // Geser marker yang sudah ada (ikon "bergerak" saat posisi berubah)
+                markerPetugas[p.session_id].setLatLng([p.latitude, p.longitude]);
+                markerPetugas[p.session_id].setIcon(iconPetugas(p.terlambat));
+                markerPetugas[p.session_id].setPopupContent(popupHtml);
+            } else {
+                markerPetugas[p.session_id] = L.marker([p.latitude, p.longitude], { icon: iconPetugas(p.terlambat) })
+                    .addTo(peta)
+                    .bindPopup(popupHtml);
+            }
+        });
+    }
+
+    if (petaEl) inisialisasiPeta();
+</script>
+
 <script>
     // Polling ringan setiap 15 detik supaya dashboard terasa real-time
     async function refreshMonitoring() {
@@ -170,11 +277,15 @@
             document.getElementById('updatedAt').textContent = data.updatedAt;
             document.getElementById('statPetugasAktif').textContent = data.petugasAktif;
             document.getElementById('statTotalTemuan').textContent = data.totalTemuanHariIni;
+
+            // Update posisi petugas di peta tanpa reload halaman penuh
+            posisiPetugas = data.posisiPetugas || [];
+            perbaruiMarkerPetugas();
         } catch (e) {
             // diam saja kalau gagal, coba lagi di siklus berikutnya
         }
     }
-    // Angka ringkasan di-update tiap 15 detik, daftar shift & temuan disegarkan penuh tiap 60 detik
+    // Angka ringkasan & posisi peta di-update tiap 15 detik, daftar shift & temuan disegarkan penuh tiap 60 detik
     setInterval(refreshMonitoring, 15000);
     setInterval(() => window.location.reload(), 60000);
 </script>

@@ -20,6 +20,7 @@ use App\Http\Controllers\CheckpointController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PatroliJadwalController;
 use App\Http\Controllers\NotifikasiController;
+use App\Http\Controllers\LaporanController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -50,50 +51,50 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('patroli')->name('patroli.')->group(function () {
 
-        // Satpam
-        Route::middleware('role:satpam')->group(function () {
-            Route::get('/', [PatroliController::class, 'index'])->name('index');
-            Route::post('/mulai', [PatroliController::class, 'start'])->name('start');
-            Route::get('/scan/{kode}', [PatroliController::class, 'scanForm'])->name('scan.form');
-            Route::post('/scan/{kode}', [PatroliController::class, 'store'])->name('scan.store');
-            Route::post('/selesai', [PatroliController::class, 'finish'])->name('finish');
-            Route::get('/riwayat', [PatroliController::class, 'riwayat'])->name('riwayat');
-            Route::get('/riwayat/{sesi}', [PatroliController::class, 'riwayatShow'])->name('riwayat.show');
+    // Satpam
+    Route::middleware('role:satpam')->group(function () {
+        Route::get('/', [PatroliController::class, 'index'])->name('index');
+        Route::post('/mulai', [PatroliController::class, 'start'])->name('start');
+        Route::get('/scan/{kode}', [PatroliController::class, 'scanForm'])->name('scan.form');
+        Route::post('/scan/{kode}', [PatroliController::class, 'store'])->name('scan.store');
+        Route::post('/selesai', [PatroliController::class, 'finish'])->name('finish');
+        Route::get('/riwayat', [PatroliController::class, 'riwayat'])->name('riwayat');
+        Route::get('/riwayat/{sesi}', [PatroliController::class, 'riwayatShow'])->name('riwayat.show');
+    });
+
+    // Checkpoint: semuanya jadi milik supervisor (admin sudah tidak akses patroli)
+    Route::prefix('checkpoint')->name('checkpoint.')->group(function () {
+        Route::middleware('role:supervisor')->group(function () {
+            Route::get('/', [CheckpointController::class, 'index'])->name('index');
+            Route::get('/cetak', [CheckpointController::class, 'print'])->name('print');
+            Route::patch('/{checkpoint}/toggle', [CheckpointController::class, 'toggleAktif'])->name('toggle');
         });
 
-        // Checkpoint: admin full, supervisor cuma lihat/toggle/cetak
-        Route::prefix('checkpoint')->name('checkpoint.')->group(function () {
-            Route::middleware('role:admin,supervisor')->group(function () {
-                Route::get('/', [CheckpointController::class, 'index'])->name('index');
-                Route::get('/cetak', [CheckpointController::class, 'print'])->name('print');
-                Route::patch('/{checkpoint}/toggle', [CheckpointController::class, 'toggleAktif'])->name('toggle');
-            });
-
-            Route::middleware('role:admin')->group(function () {
-                Route::post('/', [CheckpointController::class, 'store'])->name('store');
-                Route::put('/{checkpoint}', [CheckpointController::class, 'update'])->name('update');
-                Route::delete('/{checkpoint}', [CheckpointController::class, 'destroy'])->name('destroy');
-            });
-        });
-
-        // Jadwal patroli: admin & supervisor menugaskan satpam per tanggal
-        Route::middleware('role:admin,supervisor')->prefix('jadwal')->name('jadwal.')->group(function () {
-            Route::get('/', [PatroliJadwalController::class, 'index'])->name('index');
-            Route::post('/', [PatroliJadwalController::class, 'store'])->name('store');
-            Route::delete('/{jadwal}', [PatroliJadwalController::class, 'destroy'])->name('destroy');
-        });
-
-        // Monitoring: admin & supervisor
-        Route::middleware('role:admin,supervisor')->prefix('monitoring')->name('monitoring.')->group(function () {
-            Route::get('/', [MonitoringController::class, 'index'])->name('index');
-            Route::get('/data', [MonitoringController::class, 'data'])->name('data');
-            Route::get('/riwayat', [MonitoringController::class, 'riwayat'])->name('riwayat');
-            Route::get('/laporan', [MonitoringController::class, 'laporan'])->name('laporan');
-            Route::get('/laporan/export', [MonitoringController::class, 'exportLaporan'])->name('laporan.export');
-            Route::get('/{sesi}', [MonitoringController::class, 'show'])->name('show');
-            Route::post('/scan/{scan}/tindak-lanjut', [MonitoringController::class, 'tindakLanjut'])->name('tindak-lanjut');
+        Route::middleware('role:supervisor')->group(function () {
+            Route::post('/', [CheckpointController::class, 'store'])->name('store');
+            Route::put('/{checkpoint}', [CheckpointController::class, 'update'])->name('update');
+            Route::delete('/{checkpoint}', [CheckpointController::class, 'destroy'])->name('destroy');
         });
     });
+
+    // Jadwal patroli: supervisor menugaskan satpam per tanggal
+    Route::middleware('role:supervisor')->prefix('jadwal')->name('jadwal.')->group(function () {
+        Route::get('/', [PatroliJadwalController::class, 'index'])->name('index');
+        Route::post('/', [PatroliJadwalController::class, 'store'])->name('store');
+        Route::delete('/{jadwal}', [PatroliJadwalController::class, 'destroy'])->name('destroy');
+    });
+
+    // Monitoring: supervisor
+    Route::middleware('role:supervisor')->prefix('monitoring')->name('monitoring.')->group(function () {
+        Route::get('/', [MonitoringController::class, 'index'])->name('index');
+        Route::get('/data', [MonitoringController::class, 'data'])->name('data');
+        Route::get('/riwayat', [MonitoringController::class, 'riwayat'])->name('riwayat');
+        Route::get('/laporan', [MonitoringController::class, 'laporan'])->name('laporan');
+        Route::get('/laporan/export', [MonitoringController::class, 'exportLaporan'])->name('laporan.export');
+        Route::get('/{sesi}', [MonitoringController::class, 'show'])->name('show');
+        Route::post('/scan/{scan}/tindak-lanjut', [MonitoringController::class, 'tindakLanjut'])->name('tindak-lanjut');
+    });
+});
 
     // Notifikasi (lonceng navbar) — dipakai admin/supervisor untuk temuan patroli
     Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
@@ -119,6 +120,11 @@ function simpanSurat(array $data): void
 }
     // Tampilkan form tambah surat
     Route::middleware('auth')->group(function () {
+
+    // Modul kantor umum (dashboard, surat, karyawan, kontrak, kasbon, wisma tamu, template)
+    // hanya untuk admin. Sebelumnya cuma dibungkus 'auth' polos, jadi satpam/supervisor yang
+    // tahu URL-nya bisa buka data karyawan/kontrak/kasbon walau tidak ada link di sidebar mereka.
+    Route::middleware('role:admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -241,8 +247,13 @@ function simpanSurat(array $data): void
     Route::get('/kontrak-template/{template}/preview', [TemplateController::class, 'preview'])->name('kontrak-template.preview');
     Route::get('/kontrak-template/{template}/preview/file', [TemplateController::class, 'previewFile'])->name('kontrak-template.preview.file');
 
+    }); // end role:admin group
+
+    // Logout harus tetap bisa diakses semua role yang login (admin, supervisor, satpam).
     Route::post('/logout', [LoginController::class,'logout'])
         ->name('logout');
+
+    Route::middleware('role:admin')->group(function () {
 
     // Wisma Tamu
     Route::get('/wisma-tamu', [WismaTamuController::class, 'index'])->name('wisma-tamu.index');
@@ -255,4 +266,7 @@ function simpanSurat(array $data): void
         Route::get('/test-gemini', function (GeminiService $gemini) {
     return $gemini->generateText('Halo, siapa kamu?');
 });
-});
+
+    }); // end role:admin group (wisma-tamu, test-gemini)
+
+}); // end auth group

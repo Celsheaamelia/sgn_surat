@@ -34,6 +34,18 @@ class PatrolSession extends Model
         return $this->hasMany(PatrolScan::class);
     }
 
+    /**
+     * Jadwal (jam_mulai/jam_selesai) yang berkaitan dengan sesi ini, dicocokkan lewat
+     * user_id + tanggal. Bukan relasi FK asli karena jadwal & sesi memang tabel independen
+     * di desain saat ini — makanya diambil manual, bukan lewat method relasi Eloquent.
+     */
+    public function getJadwalAttribute(): ?PatrolSchedule
+    {
+        return PatrolSchedule::where('user_id', $this->user_id)
+            ->whereDate('tanggal', $this->tanggal)
+            ->first();
+    }
+
     public function scopeBerjalan(Builder $query): Builder
     {
         return $query->where('status', 'berjalan');
@@ -64,12 +76,24 @@ class PatrolSession extends Model
     }
 
     /**
-     * Sesi dianggap terlambat kalau sudah lewat 4 jam sejak mulai dan belum selesai.
+     * Sesi dianggap terlambat kalau:
+     * - Ada jadwal untuk hari itu dengan jam_selesai, dan sekarang sudah lewat jam_selesai
+     *   tersebut padahal sesi belum ditutup (lebih akurat sesuai jadwal per-shift); atau
+     * - Tidak ada jadwal (fallback), pakai aturan lama: lewat 4 jam sejak mulai & belum selesai.
      */
     public function getTerlambatAttribute(): bool
     {
-        return $this->status === 'berjalan'
-            && $this->mulai_at
-            && $this->mulai_at->diffInHours(now()) >= 4;
+        if ($this->status !== 'berjalan' || ! $this->mulai_at) {
+            return false;
+        }
+
+        $jadwal = $this->jadwal;
+
+        if ($jadwal && $jadwal->jam_selesai) {
+            $batasWaktu = \Illuminate\Support\Carbon::parse($this->tanggal->toDateString() . ' ' . $jadwal->jam_selesai);
+            return now()->greaterThan($batasWaktu);
+        }
+
+        return $this->mulai_at->diffInHours(now()) >= 4;
     }
 }

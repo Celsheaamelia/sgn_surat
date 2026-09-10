@@ -91,11 +91,46 @@ class MonitoringController extends Controller
             ->limit(10)
             ->get();
 
+        // ===== Data peta: titik checkpoint + posisi terakhir tiap petugas yang sesinya berjalan =====
+        // SOP bagian B.1: "Peta area pabrik" + "Posisi petugas (ikon bergerak)".
+        // Posisi petugas diambil dari koordinat GPS scan checkpoint TERAKHIR pada sesi yang
+        // masih berjalan (sistem ini tidak melacak GPS kontinu di antar-titik, hanya per-scan,
+        // jadi ikon "bergerak" berpindah tiap kali petugas menyelesaikan satu titik checkpoint).
+        $checkpointPeta = PatrolCheckpoint::aktif()
+            ->whereNotNull('latitude')->whereNotNull('longitude')
+            ->urut()
+            ->get(['id', 'kode', 'nama_titik', 'area', 'latitude', 'longitude']);
+
+        $posisiPetugas = $sesiHariIni
+            ->where('status', 'berjalan')
+            ->map(function (PatrolSession $s) {
+                $scanTerakhir = $s->scans->sortByDesc('scanned_at')->first();
+
+                if (! $scanTerakhir || ! $scanTerakhir->latitude || ! $scanTerakhir->longitude) {
+                    return null; // belum ada scan ber-GPS, tidak bisa ditampilkan di peta
+                }
+
+                return [
+                    'session_id' => $s->id,
+                    'petugas'    => $s->user->username ?? '-',
+                    'latitude'   => $scanTerakhir->latitude,
+                    'longitude'  => $scanTerakhir->longitude,
+                    'titik'      => $scanTerakhir->checkpoint->nama_titik ?? '-',
+                    'waktu'      => optional($scanTerakhir->scanned_at)->format('H:i'),
+                    'terlambat'  => $s->terlambat,
+                    'detail_url' => route('patroli.monitoring.show', $s->id),
+                ];
+            })
+            ->filter()
+            ->values();
+
         $data = [
             'sesiHariIni'          => $sesiHariIni,
             'petugasAktif'         => $sesiHariIni->where('status', 'berjalan')->count(),
             'totalCheckpointAktif' => $totalCheckpointAktif,
             'temuanTerbaru'        => $temuanTerbaru,
+            'checkpointPeta'       => $checkpointPeta,
+            'posisiPetugas'        => $posisiPetugas,
             'totalTemuanHariIni'   => $temuanTerbaru->count() + PatrolScan::temuan()
                 ->whereHas('session', fn ($q) => $q->hariIni())
                 ->count() - $temuanTerbaru->count(), // dihitung ulang di bawah biar akurat
@@ -138,6 +173,9 @@ class MonitoringController extends Controller
                     'detail_url' => route('patroli.monitoring.show', $t->patrol_session_id),
                 ];
             })->values();
+
+            // posisiPetugas sudah berbentuk array asosiatif ringan, aman dikirim langsung.
+            $data['checkpointPeta'] = $checkpointPeta->values();
         }
 
         return $data;

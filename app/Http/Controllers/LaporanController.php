@@ -8,6 +8,7 @@ use App\Models\PatrolScan;
 use App\Models\PatrolSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LaporanController extends Controller
 {
@@ -16,6 +17,68 @@ class LaporanController extends Controller
      * Berisi grafik kepatuhan patroli (jadwal vs realisasi), statistik kejadian, dan rekap shift.
      */
     public function index(Request $request)
+    {
+        $data = $this->hitungPeriode($request);
+
+        return view('patroli.laporan.index', $data);
+    }
+
+    /**
+     * Export rekap shift periode berjalan sebagai CSV (dibuka Excel).
+     * Memakai filter yang sama (jenis + tanggal) dengan halaman laporan.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $this->hitungPeriode($request);
+
+        $namaFile = sprintf(
+            'laporan-patroli-%s_%s_sd_%s.csv',
+            $data['jenis'],
+            $data['mulai']->format('Y-m-d'),
+            $data['selesai']->format('Y-m-d')
+        );
+
+        return response()->streamDownload(function () use ($data) {
+            $out = fopen('php://output', 'w');
+
+            // BOM supaya karakter dibaca benar oleh Excel
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, ['Laporan Patroli - ' . ucfirst($data['jenis'])]);
+            fputcsv($out, ['Periode', $data['mulai']->translatedFormat('d M Y') . ' s/d ' . $data['selesai']->translatedFormat('d M Y')]);
+            fputcsv($out, []);
+            fputcsv($out, ['Total Shift', $data['totalShift']]);
+            fputcsv($out, ['Total Aman', $data['totalAman']]);
+            fputcsv($out, ['Total Temuan', $data['totalTemuan']]);
+            fputcsv($out, ['Total Potensi Bahaya', $data['totalBahaya']]);
+            fputcsv($out, ['Rata-rata Kepatuhan (%)', $data['rataKepatuhan'] ?? '-']);
+            fputcsv($out, []);
+
+            fputcsv($out, ['Tanggal', 'Petugas', 'Mulai', 'Selesai', 'Status', 'Terlambat', 'Checkpoint', 'Temuan']);
+            foreach ($data['rekapShift'] as $baris) {
+                fputcsv($out, [
+                    $baris['tanggal'],
+                    $baris['petugas'],
+                    $baris['mulai'],
+                    $baris['selesai'],
+                    ucfirst($baris['status']),
+                    $baris['terlambat'] ? 'Ya' : 'Tidak',
+                    $baris['checkpoint'],
+                    $baris['temuan'],
+                ]);
+            }
+
+            fclose($out);
+        }, $namaFile, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Hitung rekap satu periode (harian/mingguan/bulanan) berdasarkan filter request.
+     * Dipakai bersama oleh index() (tampilan) dan export() (unduhan CSV).
+     */
+    private function hitungPeriode(Request $request): array
     {
         $jenis  = in_array($request->jenis, ['harian', 'mingguan', 'bulanan']) ? $request->jenis : 'mingguan';
         $anchor = $request->tanggal ? Carbon::parse($request->tanggal) : now();
@@ -78,7 +141,7 @@ class LaporanController extends Controller
             ];
         });
 
-        return view('patroli.laporan.index', [
+        return [
             'jenis'         => $jenis,
             'anchor'        => $anchor,
             'mulai'         => $mulai,
@@ -91,6 +154,6 @@ class LaporanController extends Controller
             'labelHarian'   => $labelHarian,
             'dataKepatuhan' => $dataKepatuhan,
             'rekapShift'    => $rekapShift,
-        ]);
+        ];
     }
 }

@@ -9,7 +9,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <div class="patroli-eyebrow mb-1">Patroli Digital</div>
-                <h2 class="patroli-title mb-1" style="font-size: 1.6rem;">Halo, {{ auth()->user()->username }} 👋</h2>
+                <h2 class="patroli-title mb-1" style="font-size: 1.6rem;">Halo, {{ auth()->user()->username }} </h2>
                 <p class="patroli-subtitle mb-0">{{ now()->translatedFormat('l, d F Y') }}</p>
             </div>
             <a href="{{ route('patroli.riwayat') }}" class="btn patroli-btn-ghost">
@@ -132,15 +132,21 @@
                             default  => ['label' => 'Belum discan', 'class' => 'kosong', 'icon' => 'bi-dash-circle'],
                         };
                         $tileClass = $scan ? 'st-' . $scan->status : '';
+                        // Terkunci: sesi berjalan, belum discan, dan urutannya lebih besar dari titik yang wajib discan berikutnya.
+                        $terkunci = $sesi && ! $scan && $urutanBerikutnya !== null && $cp->urutan > $urutanBerikutnya;
                     @endphp
                     <div class="col-md-4 col-sm-6">
-                        <div class="patroli-cp-tile h-100 {{ $tileClass }}">
+                        <div class="patroli-cp-tile h-100 {{ $tileClass }}" style="{{ $terkunci ? 'opacity: .55;' : '' }}">
                             <div class="card-body d-flex flex-column h-100">
                                 <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
                                     <h6 class="mb-0 fw-semibold">{{ $cp->nama_titik }}</h6>
-                                    <span class="patroli-pill {{ $statusInfo['class'] }}">
-                                        <i class="bi {{ $statusInfo['icon'] }}"></i> {{ $statusInfo['label'] }}
-                                    </span>
+                                    @if ($terkunci)
+                                        <span class="patroli-pill kosong"><i class="bi bi-lock"></i> Terkunci</span>
+                                    @else
+                                        <span class="patroli-pill {{ $statusInfo['class'] }}">
+                                            <i class="bi {{ $statusInfo['icon'] }}"></i> {{ $statusInfo['label'] }}
+                                        </span>
+                                    @endif
                                 </div>
                                 @if ($cp->area)
                                     <div class="patroli-subtitle mb-1"><i class="bi bi-geo-alt"></i> {{ $cp->area }}</div>
@@ -156,6 +162,8 @@
                                         </div>
                                     @elseif (! $sesi)
                                         <div class="patroli-subtitle small">Mulai shift dulu untuk scan titik ini.</div>
+                                    @elseif ($terkunci)
+                                        <div class="patroli-subtitle small">Selesaikan titik sebelumnya dulu sesuai urutan rute.</div>
                                     @else
                                         <div class="patroli-subtitle small">Belum discan &mdash; pindai QR fisik di lokasi.</div>
                                     @endif
